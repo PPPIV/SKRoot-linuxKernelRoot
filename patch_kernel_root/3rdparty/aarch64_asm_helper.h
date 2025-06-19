@@ -37,10 +37,10 @@ static aarch64_asm_info init_aarch64_asm() {
 	auto a = std::make_unique<asmjit::a64::Assembler>(code.get());
 	auto err = std::make_unique<MyAsmJitErrorHandler>();
 	a->setErrorHandler(err.get());
-	return { std::move(code), std::move(a), std::move(logger), std::move(err)};
+	return { std::move(code), std::move(a), std::move(logger), std::move(err) };
 }
 
-static std::string aarch64_asm_to_bytes(const aarch64_asm_info & asm_info) {
+static std::string aarch64_asm_to_bytes(const aarch64_asm_info& asm_info) {
 	if (asm_info.err->isError()) {
 		return {};
 	}
@@ -60,7 +60,7 @@ static std::string aarch64_asm_to_bytes(const aarch64_asm_info & asm_info) {
 	return oss.str();
 }
 
-static bool aarch64_asm_b(std::unique_ptr<asmjit::a64::Assembler> &a, int32_t b_value) {
+static bool aarch64_asm_b(std::unique_ptr<asmjit::a64::Assembler>& a, int32_t b_value) {
 	if (b_value % 4 != 0) {
 		std::cout << "[发生错误] The B instruction offset must be a multiple of 4" << std::endl;
 		return false;
@@ -112,7 +112,8 @@ static bool aarch64_asm_adr_x(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit
 		a2->embed(filler.data(), size);
 		a2->bind(label_statr);
 		a2->nop();
-	} else {
+	}
+	else {
 		a2->bind(label_statr);
 		a2->embed(filler.data(), size);
 		a2->adr(x, label_statr);
@@ -139,13 +140,49 @@ static void aarch64_asm_mov_x(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit
 		if (!isInitialized) {
 			a->movz(x, imm16, idx * 16);
 			isInitialized = true;
-		} else {
+		}
+		else {
 			a->movk(x, imm16, idx * 16);
 		}
 	}
 	if (!isInitialized) {
 		a->movz(x, 0, 0);
 	}
+}
+
+static bool aarch64_asm_pacia(std::unique_ptr<asmjit::a64::Assembler>& a, const asmjit::a64::GpX& reg) {
+	uint32_t reg_n = reg.id();
+	if (reg_n > 31) {
+		std::cout << "[发生错误] Xn 寄存器编号超出范围: " << reg_n << std::endl;
+		return false;
+	}
+	uint32_t instr = 0xDAC103E0 | reg_n;
+	a->embed(reinterpret_cast<const uint8_t*>(&instr), sizeof(instr));
+	return true;
+}
+
+static bool aarch64_asm_paciasp(std::unique_ptr<asmjit::a64::Assembler>& a) {
+	uint32_t instr = 0xD503233F;
+	a->embed(reinterpret_cast<const uint8_t*>(&instr), sizeof(instr));
+	return true;
+}
+
+static bool aarch64_asm_autiasp(std::unique_ptr<asmjit::a64::Assembler>& a) {
+	uint32_t instr = 0xD50323BF;
+	a->embed(reinterpret_cast<const uint8_t*>(&instr), sizeof(instr));
+	return true;
+}
+
+static bool aarch64_asm_bit_c(std::unique_ptr<asmjit::a64::Assembler>& a) {
+	uint32_t instr = 0xD503245F;
+	a->embed(reinterpret_cast<const uint8_t*>(&instr), sizeof(instr));
+	return true;
+}
+
+static bool aarch64_asm_bit_j(std::unique_ptr<asmjit::a64::Assembler>& a) {
+	uint32_t instr = 0xD503249F;
+	a->embed(reinterpret_cast<const uint8_t*>(&instr), sizeof(instr));
+	return true;
 }
 
 static std::string print_aarch64_asm(const aarch64_asm_info& asm_info) {

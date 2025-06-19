@@ -82,9 +82,9 @@ int main(int argc, char* argv[]) {
 
 	std::cout << "_text:" << sym._text << std::endl;
 	std::cout << "_stext:" << sym._stext << std::endl;
-	std::cout << "die:" << sym.die << std::endl;
-	std::cout << "arm64_notify_die:" << sym.arm64_notify_die << std::endl;
-	std::cout << "kernel_restart:" << sym.kernel_restart << std::endl;
+	std::cout << "die:" << sym.die.offset << ", size:" << sym.die.size << std::endl;
+	std::cout << "arm64_notify_die:" << sym.arm64_notify_die.offset << ", size:" << sym.arm64_notify_die.size << std::endl;
+	std::cout << "kernel_restart:" << sym.kernel_restart.offset << ", size:" << sym.kernel_restart.size << std::endl;
 
 	std::cout << "__do_execve_file:" << sym.__do_execve_file << std::endl;
 	std::cout << "do_execveat_common:" << sym.do_execveat_common << std::endl;
@@ -185,12 +185,12 @@ int main(int argc, char* argv[]) {
 		next_hook_func_addr = patchFilldir64.patch_filldir64(first_hook_start_addr, next_hook_func_addr, vec_patch_bytes_data);
 		next_hook_func_addr = patchAvcDenied.patch_avc_denied(next_hook_func_addr, v_cred, vec_patch_bytes_data);
 		next_hook_func_addr = patchFreezeTask.patch_freeze_task(next_hook_func_addr, v_cred, vec_patch_bytes_data);
-	} else if(sym.die && sym.arm64_notify_die && sym.kernel_restart) {
-		first_hook_start_addr = sym.die;
+	} else if(sym.die.offset && sym.arm64_notify_die.offset && sym.kernel_restart.offset) {
+		first_hook_start_addr = sym.die.offset;
 		next_hook_func_addr = patchDoExecve.patch_do_execve(str_root_key, first_hook_start_addr, v_cred, v_seccomp, vec_patch_bytes_data);
 		next_hook_func_addr = patchFilldir64.patch_filldir64(first_hook_start_addr, next_hook_func_addr, vec_patch_bytes_data);
-		next_hook_func_addr = patchAvcDenied.patch_avc_denied(sym.arm64_notify_die, v_cred, vec_patch_bytes_data);
-		next_hook_func_addr = patchFreezeTask.patch_freeze_task(sym.kernel_restart, v_cred, vec_patch_bytes_data);
+		next_hook_func_addr = patchAvcDenied.patch_avc_denied(sym.arm64_notify_die.offset, v_cred, vec_patch_bytes_data);
+		next_hook_func_addr = patchFreezeTask.patch_freeze_task(sym.kernel_restart.offset, v_cred, vec_patch_bytes_data);
 	} else {
 		std::cout << "Failed to find hook start addr" << std::endl;
 		system("pause");
