@@ -12,7 +12,7 @@
 ## 效果：
 * 实验设备包括：红米K20\K30\K40\K50\K60、小米8\9\10\11\12\13、小米平板5\6、红魔5\6\7、联想、三星、一加、ROG2\3等，支持型号非常多。测试结果显示，SKRoot能够在设备上**非常稳定**的运行。
 * **过市面上所有主流APP的ROOT检测，如农业XX、交X12XX3等...**
-* **无需Linux内核源码**
+* **不需要Linux内核源码**
 * **支持Linux内核版本：3.10~6.6**
 
 ![image](https://github.com/abcz316/linuxKernelRoot/blob/master/ScreenCap/1.png)
