@@ -16,7 +16,7 @@ public:
 		const SymbolAnalyze& symbol_analyze);
 	~PatchDoExecve();
 
-	size_t patch_do_execve(const std::string& str_root_key, size_t hook_func_start_addr,
+	size_t patch_do_execve(const std::string& str_root_key, const SymbolRegion& hook_func_start_region,
 		const std::vector<size_t>& task_struct_offset_cred,
 		const std::vector<size_t>& task_struct_offset_seccomp,
 		std::vector<patch_bytes_data>& vec_out_patch_bytes_data);

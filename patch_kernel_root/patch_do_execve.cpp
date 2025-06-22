@@ -60,10 +60,12 @@ bool PatchDoExecve::is_thread_info_in_stack_bottom() {
 	return false;
 }
 
-size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, size_t hook_func_start_addr,
+size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const SymbolRegion& hook_func_start_region,
 	const std::vector<size_t>& task_struct_offset_cred,
 	const std::vector<size_t>& task_struct_offset_seccomp,
 	std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
+
+	size_t hook_func_start_addr = hook_func_start_region.offset;
 	if (hook_func_start_addr == 0) { return 0; }
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
 
@@ -80,8 +82,8 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, size_t ho
 
 	vec_out_patch_bytes_data.push_back({ str_show_root_key_mem_byte, hook_func_start_addr });
 
-	size_t nHookFuncSize = str_root_key.length();
-	hook_func_start_addr += nHookFuncSize;
+	size_t shellcode_size = str_root_key.length();
+	hook_func_start_addr += str_root_key.length();
 
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
@@ -97,8 +99,7 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, size_t ho
 	a->b(CondCode::kCS, label_end);
 	if (reg_param.is_single_filename) {
 		a->mov(x7, a64::x(reg_param.do_execve_key_reg));
-	}
-	else {
+	} else {
 		a->ldr(x7, ptr(a64::x(reg_param.do_execve_key_reg)));
 	}
 	int32_t key_offset = (hook_func_start_addr - 48) - (hook_func_start_addr + a->offset());
@@ -139,8 +140,7 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, size_t ho
 		a->ldxr(w10, ptr(x9));
 		a->bic(w10, w10, Imm(0xFFF));
 		a->stxr(w11, w10, ptr(x9));
-	}
-	else {
+	} else {
 		a->ldxr(w10, ptr(x8));
 		a->bic(w10, w10, Imm(0xFFF));
 		a->stxr(w11, w10, ptr(x8));
@@ -152,26 +152,25 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, size_t ho
 	a->ldp(x7, x8, ptr(sp).post(16));
 	aarch64_asm_b(a, (int32_t)(do_execve_entry_hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
+
 	std::string strBytes = aarch64_asm_to_bytes(asm_info);
 	if (!strBytes.length()) {
 		return 0;
 	}
-	nHookFuncSize = strBytes.length() / 2;
+	shellcode_size += strBytes.length() / 2;
 	char hookOrigCmd[4] = { 0 };
 	memcpy(&hookOrigCmd, (void*)((size_t)&m_file_buf[0] + reg_param.do_execve_addr), sizeof(hookOrigCmd));
 	std::string strHookOrigCmd = bytes2hex((const unsigned char*)hookOrigCmd, sizeof(hookOrigCmd));
 	strBytes = strHookOrigCmd + strBytes.substr(0x4 * 2);
 
-	vec_out_patch_bytes_data.push_back({ strBytes, hook_func_start_addr });
-
-	aarch64_asm_info asm_info2 = init_aarch64_asm();
-	aarch64_asm_b(asm_info2.a, (int32_t)(hook_func_start_addr - reg_param.do_execve_addr));
-	std::string strBytes2 = aarch64_asm_to_bytes(asm_info2);
-	if (!strBytes2.length()) {
+	if (shellcode_size > hook_func_start_region.size) {
+		std::cout << "[发生错误] patch_do_execve failed: not enough kernel space." << std::endl;
 		return 0;
 	}
-	vec_out_patch_bytes_data.push_back({ strBytes2, reg_param.do_execve_addr });
+	
+	vec_out_patch_bytes_data.push_back({ strBytes, hook_func_start_addr });
 
-	hook_func_start_addr += nHookFuncSize;
-	return hook_func_start_addr;
+	patch_jump(reg_param.do_execve_addr, hook_func_start_addr, vec_out_patch_bytes_data);
+
+	return shellcode_size;
 }

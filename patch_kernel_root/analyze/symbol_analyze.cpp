@@ -34,10 +34,13 @@ bool SymbolAnalyze::find_symbol_offset() {
 
 	m_kernel_sym_offset.die = parse_symbol_region(kallsyms_matching_single("die"));
 	m_kernel_sym_offset.arm64_notify_die = parse_symbol_region(kallsyms_matching_single("arm64_notify_die"));
-	m_kernel_sym_offset.kernel_restart = parse_symbol_region(kallsyms_matching_single("kernel_restart"));
+	m_kernel_sym_offset.kernel_halt = parse_symbol_region(kallsyms_matching_single("kernel_halt"));
+	m_kernel_sym_offset.drm_dev_printk = parse_symbol_region(kallsyms_matching_single("drm_dev_printk"));
+	m_kernel_sym_offset.dev_printk = parse_symbol_region(kallsyms_matching_single("__dev_printk"));
+	m_kernel_sym_offset.register_die_notifier = parse_symbol_region(kallsyms_matching_single("register_die_notifier"));
+	m_kernel_sym_offset.unregister_die_notifier = parse_symbol_region(kallsyms_matching_single("unregister_die_notifier"));
 
 	m_kernel_sym_offset.__do_execve_file = kallsyms_matching_single("__do_execve_file");
-
 	m_kernel_sym_offset.do_execveat_common = kallsyms_matching_single("do_execveat_common");
 	if (m_kernel_sym_offset.do_execveat_common == 0) {
 		m_kernel_sym_offset.do_execveat_common = kallsyms_matching_single("do_execveat_common", true);
@@ -51,10 +54,9 @@ bool SymbolAnalyze::find_symbol_offset() {
 	m_kernel_sym_offset.do_execveat = kallsyms_matching_single("do_execveat");
 	m_kernel_sym_offset.do_execve = kallsyms_matching_single("do_execve");
 
-
-	m_kernel_sym_offset.avc_denied = kallsyms_matching_single("avc_denied");
-	if (m_kernel_sym_offset.avc_denied == 0) {
-		m_kernel_sym_offset.avc_denied = kallsyms_matching_single("avc_denied", true);
+	m_kernel_sym_offset.avc_denied = parse_symbol_region(kallsyms_matching_single("avc_denied"));
+	if (m_kernel_sym_offset.avc_denied.offset == 0) {
+		m_kernel_sym_offset.avc_denied = parse_symbol_region(kallsyms_matching_single("avc_denied", true));
 	}
 	m_kernel_sym_offset.filldir64 = kallsyms_matching_single("filldir64", true);
 	m_kernel_sym_offset.freeze_task = kallsyms_matching_single("freeze_task");
@@ -63,7 +65,7 @@ bool SymbolAnalyze::find_symbol_offset() {
 	m_kernel_sym_offset.prctl_get_seccomp = kallsyms_matching_single("prctl_get_seccomp"); // backup: seccomp_filter_release
 	 
 	
-	m_kernel_sym_offset.__cfi_check = kallsyms_matching_single("__cfi_check");
+	m_kernel_sym_offset.__cfi_check = parse_symbol_region(kallsyms_matching_single("__cfi_check"));
 	m_kernel_sym_offset.__cfi_check_fail = kallsyms_matching_single("__cfi_check_fail");
 	m_kernel_sym_offset.__cfi_slowpath_diag = kallsyms_matching_single("__cfi_slowpath_diag");
 	m_kernel_sym_offset.__cfi_slowpath = kallsyms_matching_single("__cfi_slowpath");
@@ -71,7 +73,7 @@ bool SymbolAnalyze::find_symbol_offset() {
 	m_kernel_sym_offset.__ubsan_handle_cfi_check_fail = kallsyms_matching_single("__ubsan_handle_cfi_check_fail");
 	m_kernel_sym_offset.report_cfi_failure = kallsyms_matching_single("report_cfi_failure");
 	return (m_kernel_sym_offset.do_execve || m_kernel_sym_offset.do_execveat || m_kernel_sym_offset.do_execveat_common) 
-		&& m_kernel_sym_offset.avc_denied
+		&& m_kernel_sym_offset.avc_denied.offset
 		&& m_kernel_sym_offset.filldir64
 		&& m_kernel_sym_offset.freeze_task
 		&& m_kernel_sym_offset.revert_creds
@@ -95,6 +97,7 @@ std::unordered_map<std::string, uint64_t> SymbolAnalyze::kallsyms_matching_all(c
 }
 
 SymbolRegion SymbolAnalyze::parse_symbol_region(uint64_t offset) {
+	if (offset == 0) { return {}; }
 	constexpr uint32_t kRetInstr = 0xD65F03C0;
 	const size_t buf_size = m_file_buf.size();
 	SymbolRegion results;
@@ -114,8 +117,6 @@ SymbolRegion SymbolAnalyze::parse_symbol_region(uint64_t offset) {
 
 std::unordered_map<std::string, SymbolRegion> SymbolAnalyze::parse_symbols_region(const std::unordered_map<std::string, uint64_t>& symbols) {
 	std::unordered_map<std::string, SymbolRegion> results;
-	constexpr uint32_t kRetInstr = 0xD65F03C0;
-	const size_t buf_size = m_file_buf.size();
 	for (const auto& [func_name, offset] : symbols) {
 		if (func_name.find(".cfi_jt") != std::string::npos) { continue; }
 		results.emplace(func_name, parse_symbol_region(offset));

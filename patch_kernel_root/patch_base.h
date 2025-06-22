@@ -3,13 +3,12 @@
 #include <vector>
 #include "patch_kernel_root.h"
 #include "analyze/symbol_analyze.h"
-class PatchBase
-{
+class PatchBase {
 public:
 	PatchBase(const std::vector<char>& file_buf, const KernelSymbolOffset& sym,
 		const SymbolAnalyze& analyze_kernel);
 	~PatchBase();
-
+	size_t patch_jump(size_t patch_addr, size_t jump_addr, std::vector<patch_bytes_data>& vec_out_patch_bytes_data);
 protected:
 	int get_cred_atomic_usage_len();
 	int get_cred_securebits_padding();

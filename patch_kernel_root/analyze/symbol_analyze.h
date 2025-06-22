@@ -6,14 +6,22 @@
 struct SymbolRegion {
 	uint64_t offset = 0;
 	uint64_t size = 0;
+	void consume(uint64_t n) {
+		offset += n;
+		size -= n;
+	}
 };
 
 struct KernelSymbolOffset {
 	size_t _text = 0;
 	size_t _stext = 0;
-	SymbolRegion die;
-	SymbolRegion arm64_notify_die;
-	SymbolRegion kernel_restart;
+	SymbolRegion die = { 0 };
+	SymbolRegion arm64_notify_die = { 0 };
+	SymbolRegion kernel_halt = { 0 };
+	SymbolRegion drm_dev_printk = { 0 };
+	SymbolRegion dev_printk = { 0 };
+	SymbolRegion register_die_notifier = { 0 };
+	SymbolRegion unregister_die_notifier = { 0 };
 
 	size_t __do_execve_file = 0;
 	size_t do_execveat_common = 0;
@@ -21,7 +29,7 @@ struct KernelSymbolOffset {
 	size_t do_execveat = 0;
 	size_t do_execve = 0;
 
-	size_t avc_denied = 0;
+	SymbolRegion avc_denied = { 0 };
 	size_t filldir64 = 0;
 	size_t freeze_task = 0;
 
@@ -29,7 +37,7 @@ struct KernelSymbolOffset {
 	size_t prctl_get_seccomp = 0;
 
 
-	size_t __cfi_check = 0;
+	SymbolRegion __cfi_check = { 0 };
 	size_t __cfi_check_fail = 0;
 	size_t __cfi_slowpath_diag = 0;
 	size_t __cfi_slowpath = 0;
