@@ -124,8 +124,7 @@ int main(int argc, char* argv[]) {
 	std::vector<patch_bytes_data> vec_patch_bytes_data;
 	//cfi bypass
 	if (sym.__cfi_check.offset) {
-		patch_ret_cmd(file_buf, sym.__cfi_check.offset, vec_patch_bytes_data);
-		sym.__cfi_check.consume(4);
+		PATCH_AND_CONSUME(sym.__cfi_check, patch_ret_cmd(file_buf, sym.__cfi_check.offset, vec_patch_bytes_data));
 	}
 	if (sym.__cfi_check_fail) {
 		patch_ret_cmd(file_buf, sym.__cfi_check_fail, vec_patch_bytes_data);
@@ -148,20 +147,16 @@ int main(int argc, char* argv[]) {
 
 	// ignore patch
 	if (sym.drm_dev_printk.offset) {
-		patch_ret_cmd(file_buf, sym.drm_dev_printk.offset, vec_patch_bytes_data);
-		sym.drm_dev_printk.consume(4);
+		PATCH_AND_CONSUME(sym.drm_dev_printk, patch_ret_cmd(file_buf, sym.drm_dev_printk.offset, vec_patch_bytes_data));
 	}
 	if (sym.dev_printk.offset) {
-		patch_ret_cmd(file_buf, sym.dev_printk.offset, vec_patch_bytes_data);
-		sym.dev_printk.consume(4);
+		PATCH_AND_CONSUME(sym.dev_printk, patch_ret_cmd(file_buf, sym.dev_printk.offset, vec_patch_bytes_data));
 	}
 	if (sym.register_die_notifier.offset) {
-		patch_ret_0_cmd(file_buf, sym.register_die_notifier.offset, vec_patch_bytes_data);
-		sym.register_die_notifier.consume(8);
+		PATCH_AND_CONSUME(sym.register_die_notifier, patch_ret_0_cmd(file_buf, sym.register_die_notifier.offset, vec_patch_bytes_data));
 	}
 	if (sym.unregister_die_notifier.offset) {
-		patch_ret_0_cmd(file_buf, sym.unregister_die_notifier.offset, vec_patch_bytes_data);
-		sym.unregister_die_notifier.consume(8);
+		PATCH_AND_CONSUME(sym.unregister_die_notifier, patch_ret_0_cmd(file_buf, sym.unregister_die_notifier.offset, vec_patch_bytes_data));
 	}
 
 	std::string str_root_key;
@@ -189,28 +184,28 @@ int main(int argc, char* argv[]) {
 	if (symbol_analyze.is_kernel_version_less("5.5.0")) {
 		first_hook_start = next_hook_start_region.offset = 0x200;
 		next_hook_start_region.size = 0x200;
-		APPLY_PATCH(patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
-		APPLY_PATCH(patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
-		APPLY_PATCH(patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
-		APPLY_PATCH(patchFilldir64.patch_filldir64_end_guide(next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_end_guide(next_hook_start_region, vec_patch_bytes_data));
 
-		APPLY_PATCH(patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
-		APPLY_PATCH(patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
-		APPLY_PATCH(patchAvcDenied.patch_avc_denied_end_guide(next_hook_start_region, vec_patch_bytes_data));
-		APPLY_PATCH(patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_end_guide(next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
 
 	} else if (symbol_analyze.is_kernel_version_less("6.0.0") && sym.__cfi_check.offset) {
 		next_hook_start_region = sym.__cfi_check;
 		first_hook_start = next_hook_start_region.offset;
-		APPLY_PATCH(patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
-		APPLY_PATCH(patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
-		APPLY_PATCH(patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
-		APPLY_PATCH(patchFilldir64.patch_filldir64_end_guide(next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_end_guide(next_hook_start_region, vec_patch_bytes_data));
 
-		APPLY_PATCH(patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
-		APPLY_PATCH(patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
-		APPLY_PATCH(patchAvcDenied.patch_avc_denied_end_guide(next_hook_start_region, vec_patch_bytes_data));
-		APPLY_PATCH(patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_end_guide(next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
 
 	} else if(sym.die.offset && sym.arm64_notify_die.offset && sym.kernel_halt.offset
 		&& sym.drm_dev_printk.offset && sym.dev_printk.offset 
@@ -218,33 +213,25 @@ int main(int argc, char* argv[]) {
 		
 		next_hook_start_region = sym.die;
 		first_hook_start = next_hook_start_region.offset;
-		APPLY_PATCH(patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
-
-		APPLY_PATCH(patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
-		APPLY_PATCH(patchFilldir64.patch_jump(next_hook_start_region.offset, sym.dev_printk.offset, vec_patch_bytes_data));
-		next_hook_start_region = sym.dev_printk;
-		APPLY_PATCH(patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
-		APPLY_PATCH(patchFilldir64.patch_jump(next_hook_start_region.offset, sym.kernel_halt.offset, vec_patch_bytes_data));
-		next_hook_start_region = sym.kernel_halt;
-		APPLY_PATCH(patchFilldir64.patch_filldir64_end_guide(next_hook_start_region, vec_patch_bytes_data));
-
-		next_hook_start_region = sym.register_die_notifier;
-		APPLY_PATCH(patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
-		APPLY_PATCH(patchAvcDenied.patch_jump(next_hook_start_region.offset, sym.drm_dev_printk.offset, vec_patch_bytes_data));
-		next_hook_start_region = sym.drm_dev_printk;
-		APPLY_PATCH(patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
-		APPLY_PATCH(patchAvcDenied.patch_jump(next_hook_start_region.offset, sym.unregister_die_notifier.offset, vec_patch_bytes_data));
-		next_hook_start_region = sym.unregister_die_notifier;
-		APPLY_PATCH(patchAvcDenied.patch_avc_denied_end_guide(next_hook_start_region, vec_patch_bytes_data));
-
-		next_hook_start_region = sym.arm64_notify_die;
-		APPLY_PATCH(patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_jump(next_hook_start_region.offset, sym.dev_printk.offset, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.dev_printk, patchFilldir64.patch_filldir64_core(sym.dev_printk, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.dev_printk, patchFilldir64.patch_jump(sym.dev_printk.offset, sym.kernel_halt.offset, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.kernel_halt, patchFilldir64.patch_filldir64_end_guide(sym.kernel_halt, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.register_die_notifier, patchAvcDenied.patch_avc_denied_first_guide(sym.register_die_notifier, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.register_die_notifier, patchAvcDenied.patch_jump(sym.register_die_notifier.offset, sym.drm_dev_printk.offset, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.drm_dev_printk, patchAvcDenied.patch_avc_denied_core(sym.drm_dev_printk, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.drm_dev_printk, patchAvcDenied.patch_jump(sym.drm_dev_printk.offset, sym.unregister_die_notifier.offset, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.unregister_die_notifier, patchAvcDenied.patch_avc_denied_end_guide(sym.unregister_die_notifier, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.arm64_notify_die, patchFreezeTask.patch_freeze_task(sym.arm64_notify_die, v_cred, vec_patch_bytes_data));
 
 	} else {
 		std::cout << "Failed to find hook start addr" << std::endl;
 		system("pause");
 		return 0;
 	}
+
 
 	std::cout << "#获取ROOT权限的密匙：" << str_root_key.c_str() << std::endl << std::endl;
 
