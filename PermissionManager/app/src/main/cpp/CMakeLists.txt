@@ -21,15 +21,15 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-		../../../../../testRoot/jni/kernel_root_kit/kernel_root_kit_command.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/kernel_root_kit_exec_process.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/kernel_root_kit_process_cmdline.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/kernel_root_kit_process64_inject.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/kernel_root_kit_ptrace_arm64_utils.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/kernel_root_kit_su_install_helper.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/kernel_root_kit_upx_helper.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/kernel_root_kit_parasite_app.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/kernel_root_kit_parasite_patch_elf.cpp
+		../../../../../testRoot/jni/kernel_root_kit/core/rootkit_command.cpp
+        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_exec_process.cpp
+        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_process_cmdline.cpp
+        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_process64_inject.cpp
+        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_ptrace_arm64_utils.cpp
+        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_su_install_helper.cpp
+        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_upx_helper.cpp
+        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_parasite_app.cpp
+        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_parasite_patch_elf.cpp
         cJSON.cpp
         native-lib.cpp)
 
