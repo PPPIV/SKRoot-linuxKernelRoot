@@ -1,4 +1,4 @@
-#include "kernel_root_kit_parasite_elf_def.h"
+#include "rootkit_parasite_elf_def.h"
 #include <algorithm>
 #include <fstream>
 #include <limits>
@@ -26,7 +26,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "kernel_root_kit_log.h"
+#include "rootkit_log.h"
 // This is needed for Windows/mingw
 #ifndef O_BINARY
 #define O_BINARY 0

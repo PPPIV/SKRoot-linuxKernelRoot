@@ -1,5 +1,4 @@
-﻿#ifndef _KERNEL_ROOT_KIT_SO_SYMBOL_PARSER_H_
-#define _KERNEL_ROOT_KIT_SO_SYMBOL_PARSER_H_
+﻿#program once
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -13,7 +12,7 @@
 #include <vector>
 #include <errno.h>
 
-#include "kernel_root_kit_err_def.h"
+#include "rootkit_err_def.h"
 namespace kernel_root {
 	
 struct dl_iterate_callback_data {
@@ -113,4 +112,3 @@ int find_mem_elf64_symbol_address(const char *so_path, std::map<std::string, uin
 }
 
 }
-#endif /* _KERNEL_ROOT_KIT_SO_SYMBOL_PARSER_H_ */

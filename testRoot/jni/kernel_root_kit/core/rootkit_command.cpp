@@ -1,4 +1,4 @@
-﻿#include "kernel_root_kit_command.h"
+﻿#include "rootkit_command.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
@@ -12,7 +12,7 @@
 
 #include <sys/prctl.h>
 
-#include "kernel_root_kit_umbrella.h"
+#include "rootkit_umbrella.h"
 
 namespace kernel_root {
 	ssize_t get_root(const char* str_root_key) {

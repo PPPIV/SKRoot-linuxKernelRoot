@@ -1,6 +1,4 @@
-﻿#ifndef _KERNEL_ROOT_KIT_COMMAND_H_
-#define _KERNEL_ROOT_KIT_COMMAND_H_
-
+﻿#program once
 #include <iostream>
 #include <stdio.h>
 #include <stdint.h>
@@ -16,4 +14,3 @@ namespace kernel_root {
 	//执行root命令，返回值为0则代表成功
 	std::string run_root_cmd(const char* str_root_key, const char* cmd, ssize_t & err);
 }
-#endif /* _KERNEL_ROOT_KIT_COMMAND_H_ */

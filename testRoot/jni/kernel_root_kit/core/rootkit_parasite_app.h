@@ -1,5 +1,4 @@
-#ifndef _KERNEL_ROOT_KIT_PARASITE_APP_H_
-#define _KERNEL_ROOT_KIT_PARASITE_APP_H_
+#program once
 #include <iostream>
 #include <set>
 #include <map>
@@ -24,4 +23,3 @@ ssize_t parasite_implant_su_env(const char* str_root_key, const char* target_pid
 //fork安全版本（可用于安卓APP直接调用）
 ssize_t safe_parasite_implant_su_env(const char* str_root_key, const char* target_pid_cmdline, const char* original_so_full_path, std::string_view su_folder);
 }
-#endif /* _KERNEL_ROOT_KIT_PARASITE_APP_H_ */

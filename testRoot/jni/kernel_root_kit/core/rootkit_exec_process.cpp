@@ -1,4 +1,4 @@
-﻿#include "kernel_root_kit_exec_process.h"
+﻿#include "rootkit_exec_process.h"
 #include <iostream>
 #include <stdio.h>
 #include <stdint.h>
@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #include <sys/prctl.h>
 
-#include "kernel_root_kit_umbrella.h"
+#include "rootkit_umbrella.h"
 
 namespace kernel_root {
 	ssize_t root_exec_process(const char* str_root_key, const char *file_path) {

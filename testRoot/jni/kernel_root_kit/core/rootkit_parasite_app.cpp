@@ -1,17 +1,17 @@
-#include "kernel_root_kit_parasite_app.h"
+#include "rootkit_parasite_app.h"
 
 #ifndef LIB_ROOT_SERVER_MODE
-#include "kernel_root_kit_lib_root_server_data.h"
+#include "rootkit_lib_root_server_data.h"
 #endif
-#include "kernel_root_kit_umbrella.h"
-#include "kernel_root_kit_lib_su_env_data.h"
-#include "kernel_root_kit_parasite_patch_elf.h"
-#include "kernel_root_kit_log.h"
-#include "kernel_root_kit_maps_helper.h"
-#include "kernel_root_kit_upx_helper.h"
-#include "kernel_root_kit_random.h"
-#include "../lib_root_server/lib_root_server_inline.h"
-#include "../lib_su_env/lib_su_env_inline.h"
+#include "rootkit_umbrella.h"
+#include "rootkit_lib_su_env_data.h"
+#include "rootkit_parasite_patch_elf.h"
+#include "rootkit_log.h"
+#include "rootkit_maps_helper.h"
+#include "rootkit_upx_helper.h"
+#include "rootkit_random.h"
+#include "../../lib_root_server/lib_root_server_inline.h"
+#include "../../lib_su_env/lib_su_env_inline.h"
 #include <string.h>
 #include <iostream>
 #include <fstream>

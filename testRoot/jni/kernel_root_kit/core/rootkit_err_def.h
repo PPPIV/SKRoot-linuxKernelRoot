@@ -1,6 +1,4 @@
-﻿#ifndef _KERNEL_ROOT_ERR_DEF_H_
-#define _KERNEL_ROOT_ERR_DEF_H_
-
+﻿#program once
 #define EXTRA_ERR_MULT 1000
 enum KERNEL_ROOT_ERR{
 	ERR_NONE = 0,
@@ -48,5 +46,3 @@ enum KERNEL_ROOT_ERR{
 	ERR_DLOPEN_FILE,
 	ERR_PID_NOT_FOUND,
 };
-
-#endif /* _KERNEL_ROOT_ERR_DEF_H_ */

@@ -1,4 +1,4 @@
-#include "kernel_root_kit_upx_helper.h"
+#include "rootkit_upx_helper.h"
 #include <string.h>
 #include <dirent.h>
 #include <time.h>
@@ -10,10 +10,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "kernel_root_kit_umbrella.h"
-#include "kernel_root_kit_upx_data.h"
-#include "kernel_root_kit_log.h"
-#include "../su/su_hide_path_utils.h"
+#include "rootkit_umbrella.h"
+#include "rootkit_upx_data.h"
+#include "rootkit_log.h"
+#include "../../su/su_hide_path_utils.h"
 
 namespace kernel_root {
 

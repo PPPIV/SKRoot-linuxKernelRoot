@@ -1,5 +1,4 @@
-﻿#ifndef _KERNEL_ROOT_KIT_RANDOM_APP_H_
-#define _KERNEL_ROOT_KIT_RANDOM_APP_H_
+﻿#program once
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
@@ -26,4 +25,3 @@ static void generate_lib_name(char* dest) {
 }
 
 }
-#endif /* _KERNEL_ROOT_KIT_RANDOM_APP_H_ */

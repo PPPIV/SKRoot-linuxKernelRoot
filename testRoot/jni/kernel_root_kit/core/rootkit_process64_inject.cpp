@@ -1,4 +1,4 @@
-﻿#include "kernel_root_kit_process64_inject.h"
+﻿#include "rootkit_process64_inject.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -16,11 +16,11 @@
 #include <sys/wait.h>
 #include <map>
 
-#include "kernel_root_kit_umbrella.h"
-#include "kernel_root_kit_ptrace_arm64_utils.h"
-#include "kernel_root_kit_maps_helper.h"
-#include "kernel_root_kit_elf64_symbol_parser.h"
-#include "kernel_root_kit_log.h"
+#include "rootkit_umbrella.h"
+#include "rootkit_ptrace_arm64_utils.h"
+#include "rootkit_maps_helper.h"
+#include "rootkit_elf64_symbol_parser.h"
+#include "rootkit_log.h"
 
 namespace kernel_root {
 

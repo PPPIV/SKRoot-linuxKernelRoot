@@ -1,5 +1,4 @@
-#ifndef _KERNEL_ROOT_KIT_FORK_HELPER_H_
-#define _KERNEL_ROOT_KIT_FORK_HELPER_H_
+#program once
 #include <string.h>
 #include <unistd.h>
 #include <iostream>
@@ -13,7 +12,7 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 
-#include "kernel_root_kit_err_def.h"
+#include "rootkit_err_def.h"
 
 #define BUF_SIZE 4096
 namespace kernel_root {
@@ -401,5 +400,3 @@ static bool read_map_s_i_from_child(fork_pipe_info & finfo, std::map<std::string
 
 
 }
-
-#endif /* _KERNEL_ROOT_KIT_FORK_HELPER_H_ */

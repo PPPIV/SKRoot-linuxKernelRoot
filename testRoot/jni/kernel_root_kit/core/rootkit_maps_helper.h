@@ -1,5 +1,4 @@
-﻿#ifndef _KERNEL_ROOT_KIT_MAPS_HELPER_H_
-#define _KERNEL_ROOT_KIT_MAPS_HELPER_H_
+﻿#program once
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -125,4 +124,3 @@ static std::string get_app_directory(const char* package_name) {
     return app_path;
 }
 }
-#endif /* _KERNEL_ROOT_KIT_MAPS_HELPER_H_ */

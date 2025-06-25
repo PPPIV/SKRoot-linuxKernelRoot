@@ -1,5 +1,4 @@
-﻿#ifndef _KERNEL_ROOT_KIT_PROCESS_CMDLINE_UTILS_H_
-#define _KERNEL_ROOT_KIT_PROCESS_CMDLINE_UTILS_H_
+﻿#program once
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,11 +7,10 @@
 #include <set>
 #include <map>
 #include <time.h>
-#include "kernel_root_kit_command.h"
+#include "rootkit_command.h"
 
 namespace kernel_root {
-static ssize_t find_all_cmdline_process(const char* str_root_key, const char* target_cmdline, std::set<pid_t> & out, bool compare_full_agrc = false)
-{
+static ssize_t find_all_cmdline_process(const char* str_root_key, const char* target_cmdline, std::set<pid_t> & out, bool compare_full_agrc = false) {
 	out.clear();
 	if (kernel_root::get_root(str_root_key) != ERR_NONE) {
 		return ERR_NO_ROOT;
@@ -329,5 +327,3 @@ static ssize_t safe_get_all_cmdline_process(const char* str_root_key, std::map<p
 }
 
 }
-
-#endif /* _KERNEL_ROOT_KIT_PROCESS_CMDLINE_UTILS_H_ */

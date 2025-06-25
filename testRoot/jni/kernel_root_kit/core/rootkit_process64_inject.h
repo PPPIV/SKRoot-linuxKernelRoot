@@ -1,5 +1,4 @@
-﻿#ifndef _KERNEL_ROOT_KIT__PROCESS64_INJECT_H_
-#define _KERNEL_ROOT_KIT__PROCESS64_INJECT_H_
+﻿#program once
 #include <unistd.h>
 #include <vector>
 
@@ -27,4 +26,3 @@ ssize_t safe_inject_process_env64_PATH_wrapper(const char* str_root_key, int tar
 ssize_t kill_process(const char* str_root_key, pid_t pid);
 ssize_t safe_kill_process(const char* str_root_key, pid_t pid);
 }
-#endif /* _KERNEL_ROOT_KIT__PROCESS64_INJECT_H_ */

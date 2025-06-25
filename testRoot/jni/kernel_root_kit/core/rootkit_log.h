@@ -1,5 +1,4 @@
-#ifndef _KERNEL_ROOT_KIT_LOG_H_
-#define _KERNEL_ROOT_KIT_LOG_H_
+#program once
 #include <iostream>
 namespace kernel_root {
 #define QUIET_KERNEL_ROOT_KIT_PRINTF
@@ -18,4 +17,3 @@ namespace kernel_root {
 #endif
 #endif
 }
-#endif /* _KERNEL_ROOT_KIT_LOG_H_ */

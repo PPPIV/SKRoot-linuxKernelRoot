@@ -1,4 +1,4 @@
-﻿#include "kernel_root_kit_process_cmdline.h"
+﻿#include "rootkit_process_cmdline.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "kernel_root_kit_umbrella.h"
+#include "rootkit_umbrella.h"
 
 namespace kernel_root {
 ssize_t find_all_cmdline_process(const char* str_root_key, const char* target_cmdline, std::set<pid_t> & out, bool compare_full_agrc) {

@@ -1,5 +1,4 @@
-﻿#ifndef _KERNEL_ROOT_KIT_PROCESS_CMDLINE_H_
-#define _KERNEL_ROOT_KIT_PROCESS_CMDLINE_H_
+﻿#program once
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,5 +53,3 @@ ssize_t get_all_cmdline_process(const char* str_root_key, std::map<pid_t, std::s
 //fork安全版本（可用于安卓APP直接调用）
 ssize_t safe_get_all_cmdline_process(const char* str_root_key, std::map<pid_t, std::string> & pid_map, bool compare_full_agrc = false);
 }
-
-#endif /* _KERNEL_ROOT_KIT_PROCESS_CMDLINE_H_ */

@@ -1,4 +1,4 @@
-#include "kernel_root_kit_su_install_helper.h"
+#include "rootkit_su_install_helper.h"
 
 #include <string.h>
 #include <dirent.h>
@@ -10,11 +10,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "kernel_root_kit_umbrella.h"
-#include "kernel_root_kit_su_exec_data.h"
-#include "kernel_root_kit_log.h"
+#include "rootkit_umbrella.h"
+#include "rootkit_su_exec_data.h"
+#include "rootkit_log.h"
 
-#include "../su/su_hide_path_utils.h"
+#include "../../su/su_hide_path_utils.h"
 namespace kernel_root {
 
 bool write_su_exec(const char* target_path) {

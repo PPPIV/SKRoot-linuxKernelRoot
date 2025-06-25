@@ -1,4 +1,4 @@
-#include "kernel_root_kit_ptrace_arm64_utils.h"
+#include "rootkit_ptrace_arm64_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/user.h>
@@ -13,7 +13,7 @@
 #include <sys/uio.h>
 #include <cinttypes>
 
-#include "kernel_root_kit_log.h"
+#include "rootkit_log.h"
 namespace kernel_root {
 int ptrace_readdata(pid_t pid, uint8_t *src, uint8_t *buf, size_t size)
 {
