@@ -1,5 +1,4 @@
-﻿#ifndef _TEST_ROOT_H_
-#define _TEST_ROOT_H_
+﻿#pragma once
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,6 +72,3 @@ static std::string get_capability_info() {
     }
     return sstrCapInfo.str();
 }
-
-
-#endif /* _TEST_ROOT_H_ */

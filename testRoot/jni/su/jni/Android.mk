@@ -4,7 +4,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE            := su
 LOCAL_SRC_FILES := \
 ../su.cpp \
-../../kernel_root_kit/kernel_root_kit_command.cpp
+../../kernel_root_kit/core/rootkit_command.cpp
 
 LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/../../

@@ -2,7 +2,7 @@
 cd /d "%~dp0"
 
 set "work_path=%~dp0"
-set "kernel_root_path=%~dp0../kernel_root_kit"
+set "kernel_root_path=%~dp0../kernel_root_kit/core"
 
 echo %work_path%
 echo %kernel_root_path%
@@ -29,7 +29,7 @@ powershell -Command "(Get-Content res.h) -replace 'fileSize', 'su_exec_file_size
 powershell -Command "(Get-Content res.h) -replace 'data', 'su_exec_data' | Set-Content res.h"
 
 :: 将临时文件重命名为最终的文件名
-move /Y res.h kernel_root_kit_su_exec_data.h
+move /Y res.h rootkit_su_exec_data.h
 
 if exist res.h (
     del res.h
@@ -43,7 +43,7 @@ if exist "%work_path%\obj" (
     rmdir /S /Q "%work_path%\obj"
 )
 
-echo Finished generating the 'kernel_root_kit_su_exec_data.h' file!
-move /Y kernel_root_kit_su_exec_data.h %kernel_root_path%
-echo Successfully moved file 'kernel_root_kit_su_exec_data.h'!
+echo Finished generating the 'rootkit_su_exec_data.h' file!
+move /Y rootkit_su_exec_data.h %kernel_root_path%
+echo Successfully moved file 'rootkit_su_exec_data.h'!
 

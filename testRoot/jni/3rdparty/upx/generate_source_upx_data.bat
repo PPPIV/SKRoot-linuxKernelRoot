@@ -2,7 +2,7 @@
 cd /d "%~dp0"
 
 set "work_path=%~dp0"
-set "kernel_root_path=%~dp0../../kernel_root_kit"
+set "kernel_root_path=%~dp0../../kernel_root_kit/core"
 
 echo %work_path%
 echo %kernel_root_path%
@@ -28,12 +28,12 @@ powershell -Command "(Get-Content res.h) -replace 'namespace {', 'namespace kern
 powershell -Command "(Get-Content res.h) -replace 'fileSize', 'upx_file_size' | Set-Content res.h"
 powershell -Command "(Get-Content res.h) -replace 'data', 'upx_file_data' | Set-Content res.h"
 
-move /Y res.h kernel_root_kit_upx_data.h
+move /Y res.h rootkit_upx_data.h
 
 if exist res.h (
     del res.h
 )
 
-echo Finished generating the 'kernel_root_kit_upx_data.h' file!
-move /Y kernel_root_kit_upx_data.h %kernel_root_path%
-echo Successfully moved file 'kernel_root_kit_upx_data.h'!
+echo Finished generating the 'rootkit_upx_data.h' file!
+move /Y rootkit_upx_data.h %kernel_root_path%
+echo Successfully moved file 'rootkit_upx_data.h'!

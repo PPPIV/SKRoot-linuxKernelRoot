@@ -1,5 +1,4 @@
-﻿#ifndef _ROOT_SERVER_H_
-#define _ROOT_SERVER_H_
+﻿#pragma once
 #include <string.h>
 #include <iostream>
 #include <fstream>
@@ -40,4 +39,3 @@ std::string GetHttpHead_200(long lLen, bool append_gzip = false) {
 }
 
 }
-#endif /* _ROOT_SERVER_H_ */

@@ -1,5 +1,4 @@
-﻿#ifndef _SU_HIDDEN_FOLDER_PATH_UTILS_H_
-#define _SU_HIDDEN_FOLDER_PATH_UTILS_H_
+﻿#pragma once
 #include <dirent.h>
 #include <stdarg.h>
 #include <string.h>
@@ -149,4 +148,3 @@ static inline std::string parse_root_key_by_su_path(
 }
 }
 }
-#endif /* _SU_HIDDEN_FOLDER_PATH_UTILS_H_ */

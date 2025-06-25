@@ -1,5 +1,4 @@
-﻿#ifndef _LOG_H_
-#define _LOG_H_
+﻿#pragma once
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -13,4 +12,3 @@
 #define SU_PRINTF(fmt, ...) printf(fmt, ##__VA_ARGS__)
 #endif
 
-#endif /* _LOG_H_ */

@@ -1,5 +1,4 @@
-﻿#ifndef STRING_UTILS_H_
-#define STRING_UTILS_H_
+﻿#pragma once
 #include <iostream>
 #include <string>
 
@@ -10,4 +9,3 @@ static void replaceAllOccurrences(std::string& str, const std::string& toSearch,
         pos = str.find(toSearch, pos + replaceWith.length());
     }
 }
-#endif

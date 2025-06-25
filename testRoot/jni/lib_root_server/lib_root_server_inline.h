@@ -1,5 +1,4 @@
-﻿#ifndef _ROOT_SERVER_INLINE_H_
-#define _ROOT_SERVER_INLINE_H_
+﻿#pragma once
 #include <string.h>
 #include <iostream>
 
@@ -11,4 +10,3 @@ static volatile const char static_inline_su_base[4096] = {
 	"55e624c70f56bd02c08c8ee13548cc9c11f770b1a08b3fd21d6ac086ee2538139a1dd262f6b38dcd60dddb3225059b06a435b89200ede37370201ea0aead4a01"
 };
 
-#endif /* _ROOT_SERVER_INLINE_H_ */

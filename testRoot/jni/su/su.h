@@ -1,5 +1,4 @@
-﻿#ifndef _SU_H_
-#define _SU_H_
+﻿#pragma once
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -58,5 +57,3 @@ struct su_request : public su_req_base {
 	std::string shell = DEFAULT_SHELL;
 	std::string command;
 };
-
-#endif /* _SU_H_ */

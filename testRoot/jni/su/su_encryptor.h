@@ -1,5 +1,4 @@
-﻿#ifndef _SU_ENCRYPTOR_H_
-#define _SU_ENCRYPTOR_H_
+﻿#pragma once
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
@@ -94,4 +93,3 @@ static std::string uncryp_string(const std::string& src, const std::string& key)
 	return dest;
 }
 }
-#endif /* _SU_ENCRYPTOR_H_ */

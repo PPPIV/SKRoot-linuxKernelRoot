@@ -1,5 +1,4 @@
-﻿#ifndef JSON_ENCODE_UTILS_H_
-#define JSON_ENCODE_UTILS_H_
+﻿#pragma once
 #include <vector>
 #include <tuple>
 #include <string_view>
@@ -30,5 +29,3 @@ static std::string GetMiddleJsonString(std::string_view text) {
 	}
     return jsonString;
 }
-
-#endif
