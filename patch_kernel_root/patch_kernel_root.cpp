@@ -177,13 +177,12 @@ int main(int argc, char* argv[]) {
 	PatchFilldir64 patchFilldir64(file_buf, sym, symbol_analyze);
 	PatchFreezeTask patchFreezeTask(file_buf, sym, symbol_analyze);
 
-	SymbolRegion next_hook_start_region = { 0 };
 	size_t first_hook_start = 0;
 	size_t shellcode_size = 0;
 	std::vector<size_t> v_hook_func_start_addr;
 	if (symbol_analyze.is_kernel_version_less("5.5.0")) {
-		first_hook_start = next_hook_start_region.offset = 0x200;
-		next_hook_start_region.size = 0x200;
+		SymbolRegion next_hook_start_region = { 0x200, 0x200 };
+		first_hook_start = next_hook_start_region.offset;
 		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
@@ -195,7 +194,7 @@ int main(int argc, char* argv[]) {
 		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
 
 	} else if (symbol_analyze.is_kernel_version_less("6.0.0") && sym.__cfi_check.offset) {
-		next_hook_start_region = sym.__cfi_check;
+		SymbolRegion next_hook_start_region = sym.__cfi_check;
 		first_hook_start = next_hook_start_region.offset;
 		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
@@ -210,12 +209,10 @@ int main(int argc, char* argv[]) {
 	} else if(sym.die.offset && sym.arm64_notify_die.offset && sym.kernel_halt.offset
 		&& sym.drm_dev_printk.offset && sym.dev_printk.offset 
 		&& sym.register_die_notifier.offset && sym.unregister_die_notifier.offset) {
-		
-		next_hook_start_region = sym.die;
-		first_hook_start = next_hook_start_region.offset;
-		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_jump(next_hook_start_region.offset, sym.dev_printk.offset, vec_patch_bytes_data));
+		first_hook_start = sym.die.offset;
+		PATCH_AND_CONSUME(sym.die, patchDoExecve.patch_do_execve(str_root_key, sym.die, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, sym.die, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_jump(sym.die.offset, sym.dev_printk.offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.dev_printk, patchFilldir64.patch_filldir64_core(sym.dev_printk, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.dev_printk, patchFilldir64.patch_jump(sym.dev_printk.offset, sym.kernel_halt.offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.kernel_halt, patchFilldir64.patch_filldir64_end_guide(sym.kernel_halt, vec_patch_bytes_data));

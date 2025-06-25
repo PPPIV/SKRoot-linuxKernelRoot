@@ -1,4 +1,4 @@
-# SKRoot - Linux内核级完美隐藏ROOT演示
+# SKRoot - LinuxKernelRoot - Linux内核级完美隐藏ROOT演示
 新一代SKRoot，挑战全网root检测手段，跟面具完全不同思路，摆脱面具被检测的弱点，完美隐藏root功能，实现真正的SELinux 0%触碰，通用性强，通杀所有内核，不需要内核源码，直接patch内核，兼容安卓APP直接JNI调用，稳定、流畅、不闪退。
 ## 功能列表：
 #### 1.测试ROOT权限
