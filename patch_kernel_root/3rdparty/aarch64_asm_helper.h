@@ -40,25 +40,20 @@ static aarch64_asm_info init_aarch64_asm() {
 	return { std::move(code), std::move(a), std::move(logger), std::move(err) };
 }
 
-static std::string aarch64_asm_to_bytes(const aarch64_asm_info& asm_info) {
+static std::pair<std::shared_ptr<char>, size_t> aarch64_asm_to_bytes(const aarch64_asm_info& asm_info) {
 	if (asm_info.err->isError()) {
-		return {};
+		return {nullptr, 0};
 	}
 	asm_info.codeHolder->flatten();
 	asmjit::Section* sec = asm_info.codeHolder->sectionById(0);
 	const asmjit::CodeBuffer& buf = sec->buffer();
 	const uint8_t* data = buf.data();
-	size_t dataSize = buf.size();
-	std::ostringstream oss;
-	for (size_t i = 0; i < dataSize; i++) {
-		oss << std::uppercase
-			<< std::hex
-			<< std::setw(2)
-			<< std::setfill('0')
-			<< static_cast<int>(data[i]);
-	}
-	return oss.str();
+	size_t data_size = buf.size();
+	std::shared_ptr<char> data_container(new (std::nothrow) char[data_size], std::default_delete<char[]>());
+	memcpy(data_container.get(), data, data_size);
+	return { data_container, data_size};
 }
+
 
 static bool aarch64_asm_b(std::unique_ptr<asmjit::a64::Assembler>& a, int32_t b_value) {
 	if (b_value % 4 != 0) {

@@ -1,4 +1,5 @@
 ﻿#include "patch_base.h"
+#include "analyze/base_func.h"
 #include "3rdparty/aarch64_asm_helper.h"
 using namespace asmjit;
 using namespace asmjit::a64;
@@ -55,10 +56,11 @@ int PatchBase::get_cap_cnt() {
 size_t PatchBase::patch_jump(size_t patch_addr, size_t jump_addr, std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	aarch64_asm_b(asm_info.a, (int32_t)(jump_addr - patch_addr));
-	std::string str_bytes = aarch64_asm_to_bytes(asm_info);
-	if (!str_bytes.length()) {
+	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
+	if (!sp_bytes) {
 		return 0;
 	}
+	std::string str_bytes = bytes2hex((const unsigned char*)sp_bytes.get(), data_size);
 	vec_out_patch_bytes_data.push_back({ str_bytes, patch_addr });
 	return str_bytes.length() / 2;
 }

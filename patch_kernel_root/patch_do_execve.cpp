@@ -153,22 +153,23 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const Sym
 	aarch64_asm_b(a, (int32_t)(do_execve_entry_hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 
-	std::string strBytes = aarch64_asm_to_bytes(asm_info);
-	if (!strBytes.length()) {
+	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
+	if (!sp_bytes) {
 		return 0;
 	}
-	shellcode_size += strBytes.length() / 2;
+	std::string str_bytes = bytes2hex((const unsigned char*)sp_bytes.get(), data_size);
+	shellcode_size += str_bytes.length() / 2;
 	char hookOrigCmd[4] = { 0 };
 	memcpy(&hookOrigCmd, (void*)((size_t)&m_file_buf[0] + reg_param.do_execve_addr), sizeof(hookOrigCmd));
 	std::string strHookOrigCmd = bytes2hex((const unsigned char*)hookOrigCmd, sizeof(hookOrigCmd));
-	strBytes = strHookOrigCmd + strBytes.substr(0x4 * 2);
+	str_bytes = strHookOrigCmd + str_bytes.substr(0x4 * 2);
 
 	if (shellcode_size > hook_func_start_region.size) {
 		std::cout << "[发生错误] patch_do_execve failed: not enough kernel space." << std::endl;
 		return 0;
 	}
 	
-	vec_out_patch_bytes_data.push_back({ strBytes, hook_func_start_addr });
+	vec_out_patch_bytes_data.push_back({ str_bytes, hook_func_start_addr });
 
 	patch_jump(reg_param.do_execve_addr, hook_func_start_addr, vec_out_patch_bytes_data);
 
