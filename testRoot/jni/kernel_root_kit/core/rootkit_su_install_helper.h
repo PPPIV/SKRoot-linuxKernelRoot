@@ -1,4 +1,4 @@
-#program once
+#pragma once
 #include <iostream>
 namespace kernel_root {
 std::string install_su(const char* str_root_key, const char* base_path, ssize_t & err);

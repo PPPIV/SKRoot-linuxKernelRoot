@@ -1,4 +1,4 @@
-#program once
+#pragma once
 #include <iostream>
 namespace kernel_root {
 #define QUIET_KERNEL_ROOT_KIT_PRINTF

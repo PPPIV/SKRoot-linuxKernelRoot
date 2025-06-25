@@ -1,4 +1,4 @@
-﻿#program once
+﻿#pragma once
 #define EXTRA_ERR_MULT 1000
 enum KERNEL_ROOT_ERR{
 	ERR_NONE = 0,

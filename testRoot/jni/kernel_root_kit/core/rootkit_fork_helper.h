@@ -1,4 +1,4 @@
-#program once
+#pragma once
 #include <string.h>
 #include <unistd.h>
 #include <iostream>
