@@ -6,12 +6,21 @@
 #define MIN(x, y)(x < y) ? (x) : (y)
 #endif // !MIN
 
-KernelVersionParser::KernelVersionParser(const std::vector<char>& file_buf) : m_file_buf(file_buf)
-{
+KernelVersionParser::KernelVersionParser(const std::vector<char>& file_buf) : m_file_buf(file_buf) {
+  m_ver = find_kernel_versions();
 }
 
-KernelVersionParser::~KernelVersionParser()
-{
+KernelVersionParser::~KernelVersionParser() {}
+
+std::string KernelVersionParser::get_kernel_version() const {
+	return m_ver;
+}
+
+bool KernelVersionParser::is_kernel_version_less(const std::string& ver) const {
+	if (!m_ver.empty()) {
+		return is_version_less(m_ver, ver);
+	}
+	return false;
 }
 
 // Helper function to extract and print the version number starting from the given index

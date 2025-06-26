@@ -12,8 +12,7 @@ struct ExecveParam {
 class PatchDoExecve : public PatchBase
 {
 public:
-	PatchDoExecve(const std::vector<char>& file_buf, const KernelSymbolOffset& sym,
-		const SymbolAnalyze& symbol_analyze);
+	PatchDoExecve(const std::vector<char>& file_buf, const KernelSymbolOffset &sym);
 	~PatchDoExecve();
 
 	size_t patch_do_execve(const std::string& str_root_key, const SymbolRegion& hook_func_start_region,
@@ -22,7 +21,9 @@ public:
 		std::vector<patch_bytes_data>& vec_out_patch_bytes_data);
 
 private:
-	ExecveParam get_do_execve_param();
+	ExecveParam get_do_execve_param(const KernelSymbolOffset& sym);
 	int get_need_write_cap_cnt();
 	bool is_thread_info_in_stack_bottom();
+
+	ExecveParam m_reg_param = { 0 };
 };

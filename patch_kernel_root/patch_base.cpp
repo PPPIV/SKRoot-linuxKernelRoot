@@ -5,18 +5,13 @@ using namespace asmjit;
 using namespace asmjit::a64;
 using namespace asmjit::a64::Predicate;
 
-PatchBase::PatchBase(const std::vector<char>& file_buf, const KernelSymbolOffset& sym,
-	const SymbolAnalyze& symbol_analyze) : m_file_buf(file_buf), m_sym(sym), m_symbol_analyze(symbol_analyze) {
+PatchBase::PatchBase(const std::vector<char>& file_buf) : m_file_buf(file_buf), m_kernel_ver_parser(file_buf) {}
 
-}
-
-PatchBase::~PatchBase()
-{
-}
+PatchBase::~PatchBase() {}
 
 int PatchBase::get_cred_atomic_usage_len() {
 	int len = 8;
-	if (m_symbol_analyze.is_kernel_version_less("6.6.0")) {
+	if (m_kernel_ver_parser.is_kernel_version_less("6.6.0")) {
 		len = 4;
 	}
 	return len;
@@ -31,10 +26,10 @@ int PatchBase::get_cred_securebits_padding() {
 
 uint64_t PatchBase::get_cap_ability_max() {
 	uint64_t cap = 0x3FFFFFFFFF;
-	if (m_symbol_analyze.is_kernel_version_less("5.8.0")) {
+	if (m_kernel_ver_parser.is_kernel_version_less("5.8.0")) {
 		cap = 0x3FFFFFFFFF;
 	}
-	else if (m_symbol_analyze.is_kernel_version_less("5.9.0")) {
+	else if (m_kernel_ver_parser.is_kernel_version_less("5.9.0")) {
 		cap = 0xFFFFFFFFFF;
 	}
 	else {
@@ -45,7 +40,7 @@ uint64_t PatchBase::get_cap_ability_max() {
 
 int PatchBase::get_cap_cnt() {
 	int cnt = 0;
-	if (m_symbol_analyze.is_kernel_version_less("4.3.0")) {
+	if (m_kernel_ver_parser.is_kernel_version_less("4.3.0")) {
 		cnt = 4;
 	} else {
 		cnt = 5;

@@ -17,7 +17,6 @@ public:
 	bool init_kallsyms_lookup_name();
 	uint64_t kallsyms_lookup_name(const char* name);
 	std::unordered_map<std::string, uint64_t> kallsyms_lookup_names_like(const char* name);
-	bool is_kernel_version_less(const std::string& ver) const;
 private:
 	const std::vector<char>& m_file_buf;
 	KernelVersionParser m_kernel_ver_parser;

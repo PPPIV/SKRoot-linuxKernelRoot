@@ -6,43 +6,39 @@ using namespace asmjit;
 using namespace asmjit::a64;
 using namespace asmjit::a64::Predicate;
 
-PatchDoExecve::PatchDoExecve(const std::vector<char>& file_buf, const KernelSymbolOffset& sym,
-	const SymbolAnalyze& symbol_analyze) : PatchBase(file_buf, sym, symbol_analyze) {
-
+PatchDoExecve::PatchDoExecve(const std::vector<char>& file_buf, const KernelSymbolOffset& sym) : PatchBase(file_buf) {
+	m_reg_param = get_do_execve_param(sym);
 }
 PatchDoExecve::~PatchDoExecve() {}
 
-ExecveParam PatchDoExecve::get_do_execve_param() {
+ExecveParam PatchDoExecve::get_do_execve_param(const KernelSymbolOffset& sym) {
 	ExecveParam param = { 0 };
-	if (m_symbol_analyze.is_kernel_version_less("3.14.0")) {
-		param.do_execve_addr = m_sym.do_execve_common;
+	if (m_kernel_ver_parser.is_kernel_version_less("3.14.0")) {
+		param.do_execve_addr = sym.do_execve_common;
 		param.do_execve_key_reg = 0;
 		param.is_single_filename = true;
 	}
-	if (m_symbol_analyze.is_kernel_version_less("3.19.0")) {
-		param.do_execve_addr = m_sym.do_execve_common;
+	if (m_kernel_ver_parser.is_kernel_version_less("3.19.0")) {
+		param.do_execve_addr = sym.do_execve_common;
 		param.do_execve_key_reg = 0;
-	}
-	else  if (m_symbol_analyze.is_kernel_version_less("4.18.0")) {
-		param.do_execve_addr = m_sym.do_execveat_common;
+	} else  if (m_kernel_ver_parser.is_kernel_version_less("4.18.0")) {
+		param.do_execve_addr = sym.do_execveat_common;
 		param.do_execve_key_reg = 1;
-	}
-	else if (m_symbol_analyze.is_kernel_version_less("5.9.0")) {
-		param.do_execve_addr = m_sym.__do_execve_file;
+	} else if (m_kernel_ver_parser.is_kernel_version_less("5.9.0")) {
+		param.do_execve_addr = sym.__do_execve_file;
 		param.do_execve_key_reg = 1;
-	}
-	else {
+	} else {
 		// default linux kernel useage
-		param.do_execve_addr = m_sym.do_execveat_common;
+		param.do_execve_addr = sym.do_execveat_common;
 		param.do_execve_key_reg = 1;
 	}
 
 	if (param.do_execve_addr == 0) {
-		param.do_execve_addr = m_sym.do_execve;
+		param.do_execve_addr = sym.do_execve;
 		param.do_execve_key_reg = 0;
 	}
 	if (param.do_execve_addr == 0) {
-		param.do_execve_addr = m_sym.do_execveat;
+		param.do_execve_addr = sym.do_execveat;
 		param.do_execve_key_reg = 1;
 	}
 	return param;
@@ -54,7 +50,7 @@ int PatchDoExecve::get_need_write_cap_cnt() {
 }
 
 bool PatchDoExecve::is_thread_info_in_stack_bottom() {
-	if (m_symbol_analyze.is_kernel_version_less("4.9.0")) {
+	if (m_kernel_ver_parser.is_kernel_version_less("4.9.0")) {
 		return true;
 	}
 	return false;
@@ -69,14 +65,13 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const Sym
 	if (hook_func_start_addr == 0) { return 0; }
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
 
-	const ExecveParam reg_param = get_do_execve_param();
 	int atomic_usage_len = get_cred_atomic_usage_len();
 	int securebits_padding = get_cred_securebits_padding();
 	uint64_t cap_ability_max = get_cap_ability_max();
 	int cap_cnt = get_need_write_cap_cnt();
 	bool is_thread_info_in_stack = is_thread_info_in_stack_bottom();
 
-	size_t do_execve_entry_hook_jump_back_addr = reg_param.do_execve_addr + 4;
+	size_t do_execve_entry_hook_jump_back_addr = m_reg_param.do_execve_addr + 4;
 
 	std::string str_show_root_key_mem_byte = bytes2hex((const unsigned char*)str_root_key.c_str(), str_root_key.length());
 
@@ -84,7 +79,6 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const Sym
 
 	size_t shellcode_size = str_root_key.length();
 	hook_func_start_addr += str_root_key.length();
-
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	uint32_t sp_el0_id = SysReg::encode(3, 0, 4, 1, 0);
@@ -95,12 +89,12 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const Sym
 	a->stp(x9, x10, ptr(sp).pre(-16));
 	a->stp(x11, x12, ptr(sp).pre(-16));
 	a->mov(x7, Imm(0xFFFFFFFFFFFFF001));
-	a->cmp(a64::x(reg_param.do_execve_key_reg), x7);
+	a->cmp(a64::x(m_reg_param.do_execve_key_reg), x7);
 	a->b(CondCode::kCS, label_end);
-	if (reg_param.is_single_filename) {
-		a->mov(x7, a64::x(reg_param.do_execve_key_reg));
+	if (m_reg_param.is_single_filename) {
+		a->mov(x7, a64::x(m_reg_param.do_execve_key_reg));
 	} else {
-		a->ldr(x7, ptr(a64::x(reg_param.do_execve_key_reg)));
+		a->ldr(x7, ptr(a64::x(m_reg_param.do_execve_key_reg)));
 	}
 	int32_t key_offset = (hook_func_start_addr - 48) - (hook_func_start_addr + a->offset());
 	aarch64_asm_adr_x(a, x8, key_offset);
@@ -152,7 +146,6 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const Sym
 	a->ldp(x7, x8, ptr(sp).post(16));
 	aarch64_asm_b(a, (int32_t)(do_execve_entry_hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
-
 	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
 	if (!sp_bytes) {
 		return 0;
@@ -160,7 +153,7 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const Sym
 	std::string str_bytes = bytes2hex((const unsigned char*)sp_bytes.get(), data_size);
 	shellcode_size += str_bytes.length() / 2;
 	char hookOrigCmd[4] = { 0 };
-	memcpy(&hookOrigCmd, (void*)((size_t)&m_file_buf[0] + reg_param.do_execve_addr), sizeof(hookOrigCmd));
+	memcpy(&hookOrigCmd, (void*)((size_t)&m_file_buf[0] + m_reg_param.do_execve_addr), sizeof(hookOrigCmd));
 	std::string strHookOrigCmd = bytes2hex((const unsigned char*)hookOrigCmd, sizeof(hookOrigCmd));
 	str_bytes = strHookOrigCmd + str_bytes.substr(0x4 * 2);
 
@@ -168,10 +161,7 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const Sym
 		std::cout << "[发生错误] patch_do_execve failed: not enough kernel space." << std::endl;
 		return 0;
 	}
-	
 	vec_out_patch_bytes_data.push_back({ str_bytes, hook_func_start_addr });
-
-	patch_jump(reg_param.do_execve_addr, hook_func_start_addr, vec_out_patch_bytes_data);
-
+	patch_jump(m_reg_param.do_execve_addr, hook_func_start_addr, vec_out_patch_bytes_data);
 	return shellcode_size;
 }

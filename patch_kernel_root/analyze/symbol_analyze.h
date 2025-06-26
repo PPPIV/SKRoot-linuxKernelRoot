@@ -55,7 +55,6 @@ public:
 public:
 	bool analyze_kernel_symbol();
 	KernelSymbolOffset get_symbol_offset();
-	bool is_kernel_version_less(const std::string& ver) const;
 private:
 	bool find_symbol_offset();
 	uint64_t kallsyms_matching_single(const char* name, bool fuzzy = false);

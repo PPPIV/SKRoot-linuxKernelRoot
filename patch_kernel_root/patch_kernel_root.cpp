@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
 	++argv;
 	--argc;
 
-	std::cout << "本工具用于生成SKRoot ARM64 Linux内核ROOT提权代码 V7" << std::endl << std::endl;
+	std::cout << "本工具用于生成SKRoot(Lite) ARM64 Linux内核ROOT提权代码 V7" << std::endl << std::endl;
 
 #ifdef _DEBUG
 #else
@@ -171,16 +171,16 @@ int main(int argc, char* argv[]) {
 		std::cout << std::endl;
 	}
 
-	PatchBase patchBase(file_buf, sym, symbol_analyze);
-	PatchDoExecve patchDoExecve(file_buf, sym, symbol_analyze);
-	PatchAvcDenied patchAvcDenied(file_buf, sym, symbol_analyze);
-	PatchFilldir64 patchFilldir64(file_buf, sym, symbol_analyze);
-	PatchFreezeTask patchFreezeTask(file_buf, sym, symbol_analyze);
+	KernelVersionParser kernel_ver(file_buf);
+	PatchDoExecve patchDoExecve(file_buf, sym);
+	PatchAvcDenied patchAvcDenied(file_buf, sym.avc_denied);
+	PatchFilldir64 patchFilldir64(file_buf, sym.filldir64);
+	PatchFreezeTask patchFreezeTask(file_buf, sym.freeze_task);
 
 	size_t first_hook_start = 0;
 	size_t shellcode_size = 0;
 	std::vector<size_t> v_hook_func_start_addr;
-	if (symbol_analyze.is_kernel_version_less("5.5.0")) {
+	if (kernel_ver.is_kernel_version_less("5.5.0")) {
 		SymbolRegion next_hook_start_region = { 0x200, 0x200 };
 		first_hook_start = next_hook_start_region.offset;
 		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
@@ -193,7 +193,7 @@ int main(int argc, char* argv[]) {
 		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_end_guide(next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
 
-	} else if (symbol_analyze.is_kernel_version_less("6.0.0") && sym.__cfi_check.offset) {
+	} else if (kernel_ver.is_kernel_version_less("6.0.0") && sym.__cfi_check.offset) {
 		SymbolRegion next_hook_start_region = sym.__cfi_check;
 		first_hook_start = next_hook_start_region.offset;
 		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
@@ -228,7 +228,6 @@ int main(int argc, char* argv[]) {
 		system("pause");
 		return 0;
 	}
-
 
 	std::cout << "#获取ROOT权限的密匙：" << str_root_key.c_str() << std::endl << std::endl;
 

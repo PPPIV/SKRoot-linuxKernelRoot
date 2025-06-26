@@ -21,7 +21,7 @@ KernelSymbolParser::~KernelSymbolParser()
 
 bool KernelSymbolParser::init_kallsyms_lookup_name() {
 
-	std::string current_version = m_kernel_ver_parser.find_kernel_versions();
+	std::string current_version = m_kernel_ver_parser.get_kernel_version();
 	if (current_version.empty()) {
 		std::cout << "Failed to read Linux kernel version" << std::endl;
 		return false;
@@ -29,22 +29,22 @@ bool KernelSymbolParser::init_kallsyms_lookup_name() {
 	std::cout << "Find the current Linux kernel version: " << current_version << std::endl;
 	std::cout << std::endl;
 
-	if (m_kernel_ver_parser.is_version_less(current_version, "4.6.0")) {
+	if (m_kernel_ver_parser.is_kernel_version_less("4.6.0")) {
 		if (!m_kallsyms_lookup_name.init()) {
 			std::cout << "Failed to analyze kernel kallsyms lookup name information" << std::endl;
 			return false;
 		}
-	} else if (m_kernel_ver_parser.is_version_less(current_version, "6.1.42")) {
+	} else if (m_kernel_ver_parser.is_kernel_version_less("6.1.42")) {
 		if (!m_kallsyms_lookup_name_4_6_0.init()) {
 			std::cout << "Failed to analyze kernel kallsyms lookup name information" << std::endl;
 			return false;
 		}
-	} else if (m_kernel_ver_parser.is_version_less(current_version, "6.1.60")) {
+	} else if (m_kernel_ver_parser.is_kernel_version_less("6.1.60")) {
 		if (!m_kallsyms_lookup_name_6_1_42.init()) {
 			std::cout << "Failed to analyze kernel kallsyms lookup name information" << std::endl;
 			return false;
 		}
-	} else if (m_kernel_ver_parser.is_version_less(current_version, "6.6.30")) {
+	} else if (m_kernel_ver_parser.is_kernel_version_less("6.6.30")) {
 		if (!m_kallsyms_lookup_name_6_1_60.init()) {
 			std::cout << "Failed to analyze kernel kallsyms lookup name information" << std::endl;
 			return false;
@@ -93,12 +93,4 @@ std::unordered_map<std::string, uint64_t> KernelSymbolParser::kallsyms_lookup_na
 		}
 	}
 	return result;
-}
-
-bool KernelSymbolParser::is_kernel_version_less(const std::string& ver) const {
-	std::string current_version = m_kernel_ver_parser.find_kernel_versions();
-	if (!current_version.empty()) {
-		return m_kernel_ver_parser.is_version_less(current_version, ver);
-	}
-	return false;
 }

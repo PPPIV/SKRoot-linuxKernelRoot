@@ -5,14 +5,10 @@ using namespace asmjit;
 using namespace asmjit::a64;
 using namespace asmjit::a64::Predicate;
 
-PatchAvcDenied::PatchAvcDenied(const std::vector<char>& file_buf, const KernelSymbolOffset& sym,
-	const SymbolAnalyze& symbol_analyze) : PatchBase(file_buf, sym, symbol_analyze) {
+PatchAvcDenied::PatchAvcDenied(const std::vector<char>& file_buf, const SymbolRegion& avc_denied)
+	: PatchBase(file_buf), m_avc_denied(avc_denied) {}
 
-}
-
-PatchAvcDenied::~PatchAvcDenied()
-{
-}
+PatchAvcDenied::~PatchAvcDenied() {}
 
 int PatchAvcDenied::get_need_read_cap_cnt() {
 	int cnt = get_cap_cnt();
@@ -27,8 +23,7 @@ size_t PatchAvcDenied::patch_avc_denied_first_guide(const SymbolRegion& hook_fun
 	size_t hook_func_start_addr = hook_func_start_region.offset;
 	if (hook_func_start_addr == 0) { return 0; }
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
-	size_t avc_denied_addr = m_sym.avc_denied.offset + m_sym.avc_denied.size - 4;
-
+	size_t avc_denied_addr = m_avc_denied.offset + m_avc_denied.size - 4;
 	
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;

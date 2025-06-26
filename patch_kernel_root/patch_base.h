@@ -5,8 +5,7 @@
 #include "analyze/symbol_analyze.h"
 class PatchBase {
 public:
-	PatchBase(const std::vector<char>& file_buf, const KernelSymbolOffset& sym,
-		const SymbolAnalyze& analyze_kernel);
+	PatchBase(const std::vector<char>& file_buf);
 	~PatchBase();
 	size_t patch_jump(size_t patch_addr, size_t jump_addr, std::vector<patch_bytes_data>& vec_out_patch_bytes_data);
 protected:
@@ -15,6 +14,5 @@ protected:
 	uint64_t get_cap_ability_max();
 	int get_cap_cnt();
 	const std::vector<char>& m_file_buf;
-	const KernelSymbolOffset& m_sym;
-	const SymbolAnalyze& m_symbol_analyze;
+	KernelVersionParser m_kernel_ver_parser;
 };

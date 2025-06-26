@@ -51,7 +51,7 @@ static std::pair<std::shared_ptr<char>, size_t> aarch64_asm_to_bytes(const aarch
 	size_t data_size = buf.size();
 	std::shared_ptr<char> data_container(new (std::nothrow) char[data_size], std::default_delete<char[]>());
 	memcpy(data_container.get(), data, data_size);
-	return { data_container, data_size};
+	return { data_container, data_size };
 }
 
 
