@@ -55,8 +55,14 @@ static auto hex2bytes(uint8_t* hex, uint8_t* str) -> void {
 		str[i / 2] = ((high > 9 ? high - 7 : high) << 4) + (low > 9 ? low - 7 : low);
 	}
 }
-static std::string bytes2hex(const unsigned char* input, size_t length) {
 
+static std::string bytes2hex(const unsigned char* input, size_t length) {
+	static const char HEX[16] = {
+	'0', '1', '2', '3',
+	'4', '5', '6', '7',
+	'8', '9', 'a', 'b',
+	'c', 'd', 'e', 'f'
+	};
 	std::string str;
 	str.reserve(length << 1);
 	for (size_t i = 0; i < length; ++i) {

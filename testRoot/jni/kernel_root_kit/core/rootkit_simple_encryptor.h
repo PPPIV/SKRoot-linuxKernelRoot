@@ -6,22 +6,22 @@
 #include <chrono>
 #include <stdexcept>
 namespace {
-	static const std::string ALPHABET =
+	static const std::string alphabet62 =
 	"0123456789"
 	"abcdefghijklmnopqrstuvwxyz"
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	static const int M = (int)ALPHABET.size(); // 62
+	static const int BASE62 = (int)alphabet62.size(); // 62
 
 	static int random_index() {
 		static std::mt19937 rng(
 			(unsigned)std::chrono::steady_clock::now().time_since_epoch().count()
 		);
-		std::uniform_int_distribution<int> dist(0, M - 1);
+		std::uniform_int_distribution<int> dist(0, BASE62 - 1);
 		return dist(rng);
 	}
 
 	static int idx_of(char c) {
-		auto pos = ALPHABET.find(c);
+		auto pos = alphabet62.find(c);
 		if (pos == std::string::npos) {
 			throw std::invalid_argument(std::string("Invalid char: ") + c);
 		}
@@ -36,14 +36,14 @@ static std::string simple_encrypt(const std::string& plain) {
 		throw std::invalid_argument("Plaintext cannot be empty");
 	}
 	int ki = random_index();
-	char key = ALPHABET[ki];
+	char key = alphabet62[ki];
 	std::string cipher;
 	cipher.reserve(N + 1);
 	cipher.push_back(key);
 	for (size_t i = 0; i < N; ++i) {
 		int pi = idx_of(plain[i]);
-		int ci = (pi + ki + (int)i) % M;
-		cipher.push_back(ALPHABET[ci]);
+		int ci = (pi + ki + (int)i) % BASE62;
+		cipher.push_back(alphabet62[ci]);
 	}
 	return cipher;
 }
@@ -63,9 +63,36 @@ static std::string simple_decrypt(const std::string& cipher) {
 
 	for (size_t i = 0; i < N; ++i) {
 		int ci = idx_of(cipher[i + 1]);
-		int pi = (ci - ki - (int)i) % M;
-		if (pi < 0) pi += M;
-		plain.push_back(ALPHABET[pi]);
+		int pi = (ci - ki - (int)i) % BASE62;
+		if (pi < 0) pi += BASE62;
+		plain.push_back(alphabet62[pi]);
 	}
 	return plain;
+}
+
+static std::string to_base62(std::size_t num) {
+	if (num == 0) {
+		return std::string(1, alphabet62[0]);
+	}
+	std::string s;
+	while (num > 0) {
+		int rem = static_cast<int>(num % BASE62);
+		s.push_back(alphabet62[rem]);
+		num /= BASE62;
+	}
+	std::reverse(s.begin(), s.end());
+	return s;
+}
+
+static std::size_t from_base62(const std::string& s) {
+	std::size_t val = 0;
+	for (char c : s) {
+		std::size_t idx = alphabet62.find(c);
+		if (idx == std::string::npos) {
+			throw std::invalid_argument(
+				std::string("Invalid character in base62 string: ") + c);
+		}
+		val = val * BASE62 + idx;
+	}
+	return val;
 }
