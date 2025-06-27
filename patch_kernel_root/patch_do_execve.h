@@ -15,10 +15,10 @@ public:
 	PatchDoExecve(const std::vector<char>& file_buf, const KernelSymbolOffset &sym);
 	~PatchDoExecve();
 
-	size_t patch_do_execve(const std::string& str_root_key, const SymbolRegion& hook_func_start_region,
-		const std::vector<size_t>& task_struct_offset_cred,
-		const std::vector<size_t>& task_struct_offset_seccomp,
+	size_t patch_do_execve(const SymbolRegion& hook_func_start_region, const std::vector<size_t>& task_struct_offset_cred, const std::vector<size_t>& task_struct_offset_seccomp,
 		std::vector<patch_bytes_data>& vec_out_patch_bytes_data);
+
+	size_t patch_root_key(const std::string& root_key, size_t write_addr, std::vector<patch_bytes_data>& vec_out_patch_bytes_data);
 
 private:
 	ExecveParam get_do_execve_param(const KernelSymbolOffset& sym);

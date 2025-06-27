@@ -159,18 +159,6 @@ int main(int argc, char* argv[]) {
 		PATCH_AND_CONSUME(sym.unregister_die_notifier, patch_ret_0_cmd(file_buf, sym.unregister_die_notifier.offset, vec_patch_bytes_data));
 	}
 
-	std::string str_root_key;
-	size_t create_new_root_key = 0;
-	std::cout << std::endl << "请选择是否需要自动随机生成ROOT密匙（1需要；2不需要）：" << std::endl;
-	std::cin >> std::dec >> create_new_root_key;
-	if (create_new_root_key == 1) {
-		str_root_key = generate_random_root_key();
-	} else {
-		std::cout << "请输入ROOT密匙（48个字符的字符串，包含大小写和数字）：" << std::endl;
-		std::cin >> str_root_key;
-		std::cout << std::endl;
-	}
-
 	KernelVersionParser kernel_ver(file_buf);
 	PatchDoExecve patchDoExecve(file_buf, sym);
 	PatchAvcDenied patchAvcDenied(file_buf, sym.avc_denied);
@@ -183,7 +171,7 @@ int main(int argc, char* argv[]) {
 	if (kernel_ver.is_kernel_version_less("5.5.0")) {
 		SymbolRegion next_hook_start_region = { 0x200, 0x200 };
 		first_hook_start = next_hook_start_region.offset;
-		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_end_guide(next_hook_start_region, vec_patch_bytes_data));
@@ -196,7 +184,7 @@ int main(int argc, char* argv[]) {
 	} else if (kernel_ver.is_kernel_version_less("6.0.0") && sym.__cfi_check.offset) {
 		SymbolRegion next_hook_start_region = sym.__cfi_check;
 		first_hook_start = next_hook_start_region.offset;
-		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(str_root_key, next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_end_guide(next_hook_start_region, vec_patch_bytes_data));
@@ -210,7 +198,7 @@ int main(int argc, char* argv[]) {
 		&& sym.drm_dev_printk.offset && sym.dev_printk.offset 
 		&& sym.register_die_notifier.offset && sym.unregister_die_notifier.offset) {
 		first_hook_start = sym.die.offset;
-		PATCH_AND_CONSUME(sym.die, patchDoExecve.patch_do_execve(str_root_key, sym.die, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.die, patchDoExecve.patch_do_execve(sym.die, v_cred, v_seccomp, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, sym.die, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_jump(sym.die.offset, sym.dev_printk.offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.dev_printk, patchFilldir64.patch_filldir64_core(sym.dev_printk, vec_patch_bytes_data));
@@ -222,12 +210,25 @@ int main(int argc, char* argv[]) {
 		PATCH_AND_CONSUME(sym.drm_dev_printk, patchAvcDenied.patch_jump(sym.drm_dev_printk.offset, sym.unregister_die_notifier.offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.unregister_die_notifier, patchAvcDenied.patch_avc_denied_end_guide(sym.unregister_die_notifier, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.arm64_notify_die, patchFreezeTask.patch_freeze_task(sym.arm64_notify_die, v_cred, vec_patch_bytes_data));
-
 	} else {
 		std::cout << "Failed to find hook start addr" << std::endl;
 		system("pause");
 		return 0;
 	}
+
+	std::string str_root_key;
+	size_t is_need_create_root_key = 0;
+	std::cout << std::endl << "请选择是否需要自动随机生成ROOT密匙（1需要；2不需要）：" << std::endl;
+	std::cin >> std::dec >> is_need_create_root_key;
+	if (is_need_create_root_key == 1) {
+		str_root_key = generate_random_root_key();
+	}
+	else {
+		std::cout << "请输入ROOT密匙（48个字符的字符串，包含大小写和数字）：" << std::endl;
+		std::cin >> str_root_key;
+		std::cout << std::endl;
+	}
+	patchDoExecve.patch_root_key(str_root_key, first_hook_start, vec_patch_bytes_data);
 
 	std::cout << "#获取ROOT权限的密匙：" << str_root_key.c_str() << std::endl << std::endl;
 

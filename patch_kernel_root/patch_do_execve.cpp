@@ -56,9 +56,7 @@ bool PatchDoExecve::is_thread_info_in_stack_bottom() {
 	return false;
 }
 
-size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const SymbolRegion& hook_func_start_region,
-	const std::vector<size_t>& task_struct_offset_cred,
-	const std::vector<size_t>& task_struct_offset_seccomp,
+size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region, const std::vector<size_t>& task_struct_offset_cred, const std::vector<size_t>& task_struct_offset_seccomp,
 	std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
 
 	size_t hook_func_start_addr = hook_func_start_region.offset;
@@ -72,18 +70,14 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const Sym
 	bool is_thread_info_in_stack = is_thread_info_in_stack_bottom();
 
 	size_t do_execve_entry_hook_jump_back_addr = m_reg_param.do_execve_addr + 4;
+	char empty_root_key_buf[ROOT_KEY_LEN] = { 0 };
 
-	std::string str_show_root_key_mem_byte = bytes2hex((const unsigned char*)str_root_key.c_str(), str_root_key.length());
-
-	vec_out_patch_bytes_data.push_back({ str_show_root_key_mem_byte, hook_func_start_addr });
-
-	size_t shellcode_size = str_root_key.length();
-	hook_func_start_addr += str_root_key.length();
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	uint32_t sp_el0_id = SysReg::encode(3, 0, 4, 1, 0);
 	Label label_end = a->newLabel();
 	Label label_cycle_name = a->newLabel();
+	a->embed((const uint8_t*)empty_root_key_buf, sizeof(empty_root_key_buf));
 	a->mov(x0, x0);
 	a->stp(x7, x8, ptr(sp).pre(-16));
 	a->stp(x9, x10, ptr(sp).pre(-16));
@@ -96,7 +90,7 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const Sym
 	} else {
 		a->ldr(x7, ptr(a64::x(m_reg_param.do_execve_key_reg)));
 	}
-	int32_t key_offset = (hook_func_start_addr - 48) - (hook_func_start_addr + a->offset());
+	int32_t key_offset = -a->offset();
 	aarch64_asm_adr_x(a, x8, key_offset);
 	a->mov(x9, Imm(0));
 	a->bind(label_cycle_name);
@@ -105,7 +99,7 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const Sym
 	a->cmp(w10, w11);
 	a->b(CondCode::kNE, label_end);
 	a->add(x9, x9, Imm(1));
-	a->cmp(x9, Imm(str_root_key.length()));
+	a->cmp(x9, Imm(ROOT_KEY_LEN));
 	a->b(CondCode::kLT, label_cycle_name);
 	a->mrs(x8, sp_el0_id);
 	a->mov(x10, x8);
@@ -146,22 +140,40 @@ size_t PatchDoExecve::patch_do_execve(const std::string& str_root_key, const Sym
 	a->ldp(x7, x8, ptr(sp).post(16));
 	aarch64_asm_b(a, (int32_t)(do_execve_entry_hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
+
 	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
 	if (!sp_bytes) {
 		return 0;
 	}
 	std::string str_bytes = bytes2hex((const unsigned char*)sp_bytes.get(), data_size);
-	shellcode_size += str_bytes.length() / 2;
+	size_t shellcode_size = str_bytes.length() / 2;
+
 	char hookOrigCmd[4] = { 0 };
 	memcpy(&hookOrigCmd, (void*)((size_t)&m_file_buf[0] + m_reg_param.do_execve_addr), sizeof(hookOrigCmd));
 	std::string strHookOrigCmd = bytes2hex((const unsigned char*)hookOrigCmd, sizeof(hookOrigCmd));
-	str_bytes = strHookOrigCmd + str_bytes.substr(0x4 * 2);
+	str_bytes = str_bytes.substr(0, sizeof(empty_root_key_buf) * 2) + strHookOrigCmd + str_bytes.substr(sizeof(empty_root_key_buf) * 2 + 0x4 * 2);
 
 	if (shellcode_size > hook_func_start_region.size) {
 		std::cout << "[发生错误] patch_do_execve failed: not enough kernel space." << std::endl;
 		return 0;
 	}
+	
 	vec_out_patch_bytes_data.push_back({ str_bytes, hook_func_start_addr });
-	patch_jump(m_reg_param.do_execve_addr, hook_func_start_addr, vec_out_patch_bytes_data);
+
+	patch_jump(m_reg_param.do_execve_addr, hook_func_start_addr + sizeof(empty_root_key_buf), vec_out_patch_bytes_data);
+
 	return shellcode_size;
+}
+
+
+size_t PatchDoExecve::patch_root_key(const std::string& root_key, size_t write_addr, std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
+	if (write_addr == 0) { return 0; }
+	std::cout << "Start hooking addr:  " << std::hex << write_addr << std::endl << std::endl;
+	std::string str_root_key = root_key;
+	if (str_root_key.length() > ROOT_KEY_LEN) {
+		str_root_key = str_root_key.substr(0, ROOT_KEY_LEN);
+	}
+	std::string str_show_root_key_mem_byte = bytes2hex((const unsigned char*)str_root_key.c_str(), str_root_key.length());
+	vec_out_patch_bytes_data.push_back({ str_show_root_key_mem_byte, write_addr });
+	return str_root_key.length() / 2;
 }

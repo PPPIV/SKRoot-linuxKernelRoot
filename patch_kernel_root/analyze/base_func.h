@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <vector>
 #include <math.h>
+#define ROOT_KEY_LEN 48
 
 static const char HEX[16] = {
 '0', '1', '2', '3',
@@ -39,8 +40,7 @@ static void get_rand_str(char* dest, int n) {
 }
 
 static std::string generate_random_root_key() {
-	const int key_len = 48;
-	char root_key_data[key_len] = { 0 };
+	char root_key_data[ROOT_KEY_LEN] = { 0 };
 	get_rand_str(root_key_data, sizeof(root_key_data));
 	std::string str_root_key(root_key_data, sizeof(root_key_data));
 	return str_root_key;
