@@ -168,7 +168,7 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 
 size_t PatchDoExecve::patch_root_key(const std::string& root_key, size_t write_addr, std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
 	if (write_addr == 0) { return 0; }
-	std::cout << "Start hooking addr:  " << std::hex << write_addr << std::endl << std::endl;
+	std::cout << "Start writing addr: " << std::hex << write_addr << std::endl << std::endl;
 	std::string str_root_key = root_key;
 	if (str_root_key.length() > ROOT_KEY_LEN) {
 		str_root_key = str_root_key.substr(0, ROOT_KEY_LEN);

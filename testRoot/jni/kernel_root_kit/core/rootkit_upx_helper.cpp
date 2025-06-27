@@ -6,6 +6,7 @@
 #include <fstream>
 #include <memory>
 #include <random>
+#include <sstream>
 #include <filesystem>
 #include <sys/stat.h>
 #include <sys/types.h>

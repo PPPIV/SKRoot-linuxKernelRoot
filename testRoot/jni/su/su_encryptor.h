@@ -1,95 +1,78 @@
 ﻿#pragma once
-#include <stdarg.h>
-#include <string.h>
-#include <unistd.h>
-#include <sstream>
-#include <iomanip>
+#include <iostream>
+#include <string>
+#include <array>
+#include <random>
+#include <chrono>
+#include <stdexcept>
 namespace {
-static void rand_str(char* dest, int n) {
-	int i, randno;
-	char stardstring[63] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-	srand((unsigned)time(NULL));
-	for (i = 0; i < n; i++) {
-		randno = rand() % 62;
-		*dest = stardstring[randno];
-		dest++;
+	static const std::string ALPHABET =
+	"0123456789"
+	"abcdefghijklmnopqrstuvwxyz"
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	static const int M = static_cast<int>(ALPHABET.size()); // 62
+
+	static int random_index() {
+		static std::mt19937 rng(
+			static_cast<unsigned>(
+				std::chrono::steady_clock::now()
+				.time_since_epoch().count()
+				)
+		);
+		std::uniform_int_distribution<int> dist(0, M - 1);
+		return dist(rng);
+	}
+
+	static int idx_of(char c) {
+		auto pos = ALPHABET.find(c);
+		if (pos == std::string::npos) {
+			throw std::invalid_argument(std::string("Invalid char: ") + c);
+		}
+		return static_cast<int>(pos);
 	}
 }
 
-static std::string encryp_string(const std::string& src, const std::string& key, bool random = true) {
-	int KeyPos = -1;
-	int SrcAsc = 0;
-	time_t t;
-
-	int KeyLen = key.length();
-	if (KeyLen == 0)
-		return "";
-
-	
-	int offset;
-	if(random) {
-		srand((unsigned)time(&t));
-		offset = rand() % 255;
-	} else {
-		offset = 128;
+static std::string encrypt4(const std::string& plain) {
+	size_t N = plain.size();
+	if (N == 0) {
+		throw std::invalid_argument("Plaintext must not be empty");
 	}
-
-	std::stringstream ss;
-	ss << std::hex << std::setw(2) << std::setfill('0') << offset;
-
-	for (int i = 0; i < src.length(); i++) {
-		SrcAsc = (src[i] + offset) % 255;
-
-		if (KeyPos < KeyLen - 1)
-			KeyPos++;
-		else
-			KeyPos = 0;
-
-		SrcAsc = SrcAsc ^ key[KeyPos];
-
-		ss << std::hex << std::setw(2) << std::setfill('0') << SrcAsc;
-
-		offset = SrcAsc;
+	std::array<int, 4> keys;
+	for (int j = 0; j < 4; ++j) {
+		keys[j] = random_index();
 	}
-	return ss.str();
+	std::string cipher;
+	cipher.reserve(N + 4);
+	for (int j = 0; j < 4; ++j) {
+		cipher.push_back(ALPHABET[keys[j]]);
+	}
+	for (size_t i = 0; i < N; ++i) {
+		int pi = idx_of(plain[i]);
+		int ki = keys[i % 4];
+		int ci = (pi + ki + static_cast<int>(i)) % M;
+		cipher.push_back(ALPHABET[ci]);
+	}
+	return cipher;
 }
 
-static std::string uncryp_string(const std::string& src, const std::string& key) {
-	int KeyLen = key.length();
-	if (KeyLen == 0)
-		return {};
-
-	int KeyPos = -1;
-	int offset = 0;
-	std::string dest;
-	int SrcAsc = 0;
-	int TmpSrcAsc = 0;
-
-	std::stringstream ss;
-	ss << std::hex << src.substr(0, 2);
-	ss >> offset;
-	int SrcPos = 2;
-	while (SrcPos < src.length()) {
-		ss.clear();
-		ss << std::hex << src.substr(SrcPos, 2);
-		ss >> SrcAsc;
-		if (KeyPos < KeyLen - 1)
-			KeyPos++;
-		else
-			KeyPos = 0;
-
-		TmpSrcAsc = SrcAsc ^ key[KeyPos];
-
-		if (TmpSrcAsc <= offset)
-			TmpSrcAsc = 255 + TmpSrcAsc - offset;
-		else
-			TmpSrcAsc = TmpSrcAsc - offset;
-
-		dest += char(TmpSrcAsc);
-		offset = SrcAsc;
-		SrcPos += 2;
+static std::string decrypt4(const std::string& cipher) {
+	size_t C = cipher.size();
+	if (C < 4) {
+		throw std::invalid_argument("Ciphertext length must be >= 4");
 	}
-
-	return dest;
-}
+	size_t N = C - 4;
+	std::array<int, 4> keys;
+	for (int j = 0; j < 4; ++j) {
+		keys[j] = idx_of(cipher[j]);
+	}
+	std::string plain;
+	plain.reserve(N);
+	for (size_t i = 0; i < N; ++i) {
+		int ci = idx_of(cipher[i + 4]);
+		int ki = keys[i % 4];
+		int pi = (ci - ki - static_cast<int>(i)) % M;
+		if (pi < 0) pi += M;
+		plain.push_back(ALPHABET[pi]);
+	}
+	return plain;
 }

@@ -3,20 +3,20 @@ cd /d "%~dp0"
 
 set "root_path=%~dp0"
 
-if exist kernel_root_kit\kernel_root_kit_lib_root_server_data.h (
-    del kernel_root_kit\kernel_root_kit_lib_root_server_data.h
+if exist kernel_root_kit\core\rootkit_lib_root_server_data.h (
+    del kernel_root_kit\core\rootkit_lib_root_server_data.h
 )
 
-if exist kernel_root_kit\kernel_root_kit_su_exec_data.h (
-    del kernel_root_kit\kernel_root_kit_su_exec_data.h
+if exist kernel_root_kit\core\rootkit_su_exec_data.h (
+    del kernel_root_kit\core\rootkit_su_exec_data.h
 )
 
-if exist kernel_root_kit\kernel_root_kit_lib_su_env_data.h (
-    del kernel_root_kit\kernel_root_kit_lib_su_env_data.h
+if exist kernel_root_kit\core\rootkit_lib_su_env_data.h (
+    del kernel_root_kit\core\rootkit_lib_su_env_data.h
 )
 
-if exist kernel_root_kit\kernel_root_kit_upx_data.h (
-    del kernel_root_kit\kernel_root_kit_upx_data.h
+if exist kernel_root_kit\core\rootkit_upx_data.h (
+    del kernel_root_kit\core\rootkit_upx_data.h
 )
 
 if exist su\res.h (

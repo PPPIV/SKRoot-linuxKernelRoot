@@ -93,30 +93,3 @@ static size_t align8(size_t addr) {
 	}
 	return addr;
 }
-
-static size_t count_endl(const std::string& s) {
-	return std::count(s.begin(), s.end(), '\n');
-}
-
-static void replace_all_distinct(std::string& str, const std::string& old_value, const std::string& new_value) {
-	for (std::string::size_type pos(0); pos != std::string::npos; pos += new_value.length()) {
-		if ((pos = str.find(old_value, pos)) != std::string::npos) {
-			str.replace(pos, old_value.length(), new_value);
-		}
-		else {
-			break;
-		}
-	}
-}
-
-static std::vector<std::string> splite_lines(const std::string& s) {
-	std::vector<std::string> lines;
-	std::istringstream iss(s);
-	std::string line;
-	while (std::getline(iss, line)) {
-		if (!line.empty() && line.back() == '\r')
-			line.pop_back();
-		lines.push_back(line);
-	}
-	return lines;
-}

@@ -2,16 +2,13 @@
 #include <dirent.h>
 #include <stdarg.h>
 #include <string.h>
+#include <string_view>
 #include <sys/stat.h>
 #include <sys/xattr.h>
 #include <time.h>
 #include <unistd.h>
 #include <filesystem>
 #include "su_encryptor.h"
-
-#define RANDOM_GUID_LEN 4
-#define ROOT_KEY_LEN 48
-#define ENCRYKEY "ECC08B04-B9FF-40B5-9596-4408626181D5"
 
 namespace kernel_root{
 namespace su{
@@ -89,13 +86,7 @@ static bool __create_directory_if_not_exists(const std::string& dir_path) {
 
 static std::string create_su_hide_folder(const char* str_root_key, const char* base_path) {
     std::string before16 = std::string(str_root_key).substr(0, 16);
-
-    char guid[RANDOM_GUID_LEN] = {0};
-    rand_str(guid, sizeof(guid));
-    std::string encodeRootKey(guid, sizeof(guid));
-    encodeRootKey += str_root_key;
-
-	encodeRootKey = encryp_string(encodeRootKey, ENCRYKEY);
+    std::string encode_root_key = encrypt4(str_root_key);
 
     std::string file_path = base_path;
     file_path += "/" + before16;
@@ -103,7 +94,7 @@ static std::string create_su_hide_folder(const char* str_root_key, const char* b
     if (!__create_directory_if_not_exists(file_path)) return {};
     if (!set_file_allow_access_mode(file_path)) return {};
 
-    file_path += "/_" + encodeRootKey;
+    file_path += "/_" + encode_root_key;
     if (!__create_directory_if_not_exists(file_path)) return {};
     if (!set_file_allow_access_mode(file_path)) return {};
 
@@ -123,28 +114,21 @@ static bool del_su_hide_folder(const char* str_root_key,
 	return std::filesystem::exists(file_path);
 }
 
-static inline std::string parse_root_key_by_su_path(
-	const char* su_path) {
-	std::string path = su_path;
-	if (path.empty()) {
-		return {};
-	}
-	int n = path.find_last_of("_");
-	if (n == -1) {
-		return {};
-	}
-	path = path.substr(++n);
-	n = path.find("/");
-	if (n != -1) {
-		path.substr(0, n);
-	}
+static inline std::string parse_root_key_by_su_path(const char* su_path) {
+    if (!su_path || !*su_path)
+        return {};
 
-	std::string decodeRootKey = uncryp_string(path, ENCRYKEY);
+    std::string_view v(su_path);
+    auto a = v.find_last_of('_');
+    if (a == v.npos)
+        return {};
+    v.remove_prefix(a + 1);
 
-	if (decodeRootKey.length() < (RANDOM_GUID_LEN + ROOT_KEY_LEN)) {
-		return {};
-	}
-	return decodeRootKey.substr(decodeRootKey.length() - ROOT_KEY_LEN);
+    auto slash = v.find('/');
+    if (slash != v.npos)
+        v.remove_suffix(v.size() - slash);
+
+    return decrypt4(std::string(v));
 }
 }
 }
