@@ -4,16 +4,10 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <random>
+#include <chrono>
 #include <vector>
 #include <math.h>
-#define ROOT_KEY_LEN 48
-
-static const char HEX[16] = {
-'0', '1', '2', '3',
-'4', '5', '6', '7',
-'8', '9', 'a', 'b',
-'c', 'd', 'e', 'f'
-};
 
 static std::vector<char> read_file_buf(const std::string& file_path) {
 	std::ifstream file(file_path, std::ios::binary | std::ios::ate);
@@ -28,15 +22,22 @@ static std::vector<char> read_file_buf(const std::string& file_path) {
 	return {};
 }
 
-static void get_rand_str(char* dest, int n) {
-	int i, randno;
-	char stardstring[63] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-	srand((unsigned)time(NULL));
-	for (i = 0; i < n; i++) {
-		randno = rand() % 62;
-		*dest = stardstring[randno];
-		dest++;
+static std::string generate_random_str(std::size_t len) {
+	static constexpr char alphabet[] =
+		"abcdefghijklmnopqrstuvwxyz"
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"0123456789";
+	static constexpr std::size_t alphabet_size = sizeof(alphabet) - 1;
+	static std::mt19937_64 rng{
+		static_cast<unsigned long>(std::chrono::steady_clock::now().time_since_epoch().count())
+	};
+	std::uniform_int_distribution<std::size_t> dist(0, alphabet_size - 1);
+	std::string key;
+	key.reserve(len);
+	for (std::size_t i = 0; i < len; ++i) {
+		key += alphabet[dist(rng)];
 	}
+	return key;
 }
 
 static std::string generate_random_root_key(int root_key_len) {

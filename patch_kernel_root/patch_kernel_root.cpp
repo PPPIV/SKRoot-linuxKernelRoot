@@ -221,7 +221,7 @@ int main(int argc, char* argv[]) {
 	std::cout << std::endl << "请选择是否需要自动随机生成ROOT密匙（1需要；2不需要）：" << std::endl;
 	std::cin >> std::dec >> is_need_create_root_key;
 	if (is_need_create_root_key == 1) {
-		str_root_key = generate_random_root_key(ROOT_KEY_LEN);
+		str_root_key = generate_random_str(ROOT_KEY_LEN);
 	} else {
 		std::cout << "请输入ROOT密匙（48个字符的字符串，包含大小写和数字）：" << std::endl;
 		std::cin >> str_root_key;

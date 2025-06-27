@@ -8,7 +8,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <filesystem>
-#include "su_encryptor.h"
+#include "simple_encryptor.h"
 
 namespace kernel_root{
 namespace su{
@@ -86,7 +86,7 @@ static bool __create_directory_if_not_exists(const std::string& dir_path) {
 
 static std::string create_su_hide_folder(const char* str_root_key, const char* base_path) {
     std::string before16 = std::string(str_root_key).substr(0, 16);
-    std::string encode_root_key = encrypt4(str_root_key);
+    std::string encode_root_key = simple_encrypt(str_root_key);
 
     std::string file_path = base_path;
     file_path += "/" + before16;
@@ -128,7 +128,7 @@ static inline std::string parse_root_key_by_su_path(const char* su_path) {
     if (slash != v.npos)
         v.remove_suffix(v.size() - slash);
 
-    return decrypt4(std::string(v));
+    return simple_decrypt(std::string(v));
 }
 }
 }

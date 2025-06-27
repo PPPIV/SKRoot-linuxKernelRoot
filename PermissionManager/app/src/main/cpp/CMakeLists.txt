@@ -50,6 +50,12 @@ find_library( # Sets the name of the path variable.
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
 
+target_include_directories(
+		permissionmanager
+		PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/
+)
+
 target_link_libraries( # Specifies the target library.
         permissionmanager
 
