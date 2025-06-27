@@ -39,10 +39,10 @@ static void get_rand_str(char* dest, int n) {
 	}
 }
 
-static std::string generate_random_root_key() {
-	char root_key_data[ROOT_KEY_LEN] = { 0 };
-	get_rand_str(root_key_data, sizeof(root_key_data));
-	std::string str_root_key(root_key_data, sizeof(root_key_data));
+static std::string generate_random_root_key(int root_key_len) {
+	std::shared_ptr<char> root_key_data(new (std::nothrow) char[root_key_len], std::default_delete<char[]>());
+	get_rand_str(root_key_data.get(), root_key_len);
+	std::string str_root_key(root_key_data.get(), root_key_len);
 	return str_root_key;
 }
 

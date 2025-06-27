@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include <iostream>
 #include <filesystem>
+#define ROOT_KEY_LEN 48
+
 #define IF_EXIT(cond) do { if (cond) { system("pause"); exit(0); } } while (0)
 
 #define PATCH_AND_CONSUME(region, call_expr) \
