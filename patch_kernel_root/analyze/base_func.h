@@ -94,9 +94,9 @@ static bool write_file_bytes(const char* file_path, size_t offset, const char* b
 	return true;
 }
 
-static size_t align8(size_t addr) {
-	if (addr % 8 != 0) {
-		addr = (addr + 7) & ~static_cast<size_t>(7);  // Align to next 8-byte boundary
+static size_t align8(size_t value) {
+	if (value % 8 != 0) {
+		value = (value + 7) & ~static_cast<size_t>(7);  // Align to next 8-byte boundary
 	}
-	return addr;
+	return value;
 }

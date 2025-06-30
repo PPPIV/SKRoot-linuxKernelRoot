@@ -30,32 +30,36 @@ namespace {
 
 }
 
-static std::string simple_encrypt(const std::string& plain) {
-	const size_t N = plain.size();
+static std::string simple_encrypt_with_key(const std::string& plain, char key) {
+	size_t N = plain.size();
 	if (N == 0) {
 		throw std::invalid_argument("Plaintext cannot be empty");
 	}
-	int ki = random_index();
-	char key = alphabet62[ki];
+	int ki = idx_of(key);
 	std::string cipher;
 	cipher.reserve(N + 1);
 	cipher.push_back(key);
 	for (size_t i = 0; i < N; ++i) {
 		int pi = idx_of(plain[i]);
-		int ci = (pi + ki + (int)i) % BASE62;
+		int ci = (pi + ki + static_cast<int>(i)) % BASE62;
 		cipher.push_back(alphabet62[ci]);
 	}
 	return cipher;
 }
 
-static std::string simple_decrypt(const std::string& cipher) {
+static std::string simple_encrypt(const std::string& plain) {
+	int ki = random_index();
+	char key = alphabet62[ki];
+	return simple_encrypt_with_key(plain, key);
+}
+
+static std::string simple_decrypt_with_key(const std::string& cipher, char key) {
 	const size_t L = cipher.size();
 	if (L <= 1) {
 		throw std::invalid_argument("Ciphertext length must be > 1");
 	}
 	size_t N = L - 1;
 
-	char key = cipher[0];
 	int ki = idx_of(key);
 
 	std::string plain;
@@ -63,11 +67,18 @@ static std::string simple_decrypt(const std::string& cipher) {
 
 	for (size_t i = 0; i < N; ++i) {
 		int ci = idx_of(cipher[i + 1]);
-		int pi = (ci - ki - (int)i) % BASE62;
+		int pi = (ci - ki - static_cast<int>(i)) % BASE62;
 		if (pi < 0) pi += BASE62;
 		plain.push_back(alphabet62[pi]);
 	}
 	return plain;
+}
+
+static std::string simple_decrypt(const std::string& cipher) {
+	if (cipher.size() <= 1) {
+		throw std::invalid_argument("Ciphertext length must be > 1");
+	}
+	return simple_decrypt_with_key(cipher, cipher[0]);
 }
 
 static std::string to_base62(std::size_t num) {

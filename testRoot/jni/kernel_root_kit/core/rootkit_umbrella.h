@@ -7,3 +7,4 @@
 #include "rootkit_process_cmdline.h"
 #include "rootkit_su_install_helper.h"
 #include "rootkit_parasite_app.h"
+#include "rootkit_simple_encryptor.h"

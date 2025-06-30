@@ -21,6 +21,57 @@ bool parser_seccomp_offset(const std::vector<char> &file_buf, size_t start, std:
 	 return find_current_task_next_register_offset(file_buf, start, mode_name, v_seccomp);
 }
 
+void cfi_bypass(const std::vector<char>& file_buf, KernelSymbolOffset &sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
+	if (sym.__cfi_check.offset) {
+		PATCH_AND_CONSUME(sym.__cfi_check, patch_ret_cmd(file_buf, sym.__cfi_check.offset, vec_patch_bytes_data));
+	}
+	if (sym.__cfi_check_fail) {
+		patch_ret_cmd(file_buf, sym.__cfi_check_fail, vec_patch_bytes_data);
+	}
+	if (sym.__cfi_slowpath_diag) {
+		patch_ret_cmd(file_buf, sym.__cfi_slowpath_diag, vec_patch_bytes_data);
+	}
+	if (sym.__cfi_slowpath) {
+		patch_ret_cmd(file_buf, sym.__cfi_slowpath, vec_patch_bytes_data);
+	}
+	if (sym.__ubsan_handle_cfi_check_fail_abort) {
+		patch_ret_cmd(file_buf, sym.__ubsan_handle_cfi_check_fail_abort, vec_patch_bytes_data);
+	}
+	if (sym.__ubsan_handle_cfi_check_fail) {
+		patch_ret_cmd(file_buf, sym.__ubsan_handle_cfi_check_fail, vec_patch_bytes_data);
+	}
+	if (sym.report_cfi_failure) {
+		patch_ret_1_cmd(file_buf, sym.report_cfi_failure, vec_patch_bytes_data);
+	}
+}
+
+void no_use_patch(const std::vector<char>& file_buf, KernelSymbolOffset &sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
+	if (sym.drm_dev_printk.offset) {
+		PATCH_AND_CONSUME(sym.drm_dev_printk, patch_ret_cmd(file_buf, sym.drm_dev_printk.offset, vec_patch_bytes_data));
+	}
+	if (sym.dev_printk.offset) {
+		PATCH_AND_CONSUME(sym.dev_printk, patch_ret_cmd(file_buf, sym.dev_printk.offset, vec_patch_bytes_data));
+	}
+	if (sym.register_die_notifier.offset) {
+		PATCH_AND_CONSUME(sym.register_die_notifier, patch_ret_0_cmd(file_buf, sym.register_die_notifier.offset, vec_patch_bytes_data));
+	}
+	if (sym.unregister_die_notifier.offset) {
+		PATCH_AND_CONSUME(sym.unregister_die_notifier, patch_ret_0_cmd(file_buf, sym.unregister_die_notifier.offset, vec_patch_bytes_data));
+	}
+}
+
+void write_all_patch(const char* file_path, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
+	for (auto& item : vec_patch_bytes_data) {
+		std::shared_ptr<char> spData(new (std::nothrow) char[item.str_bytes.length() / 2], std::default_delete<char[]>());
+		hex2bytes((uint8_t*)item.str_bytes.c_str(), (uint8_t*)spData.get());
+		if (!write_file_bytes(file_path, item.write_addr, spData.get(), item.str_bytes.length() / 2)) {
+			std::cout << "写入文件发生错误" << std::endl;
+		}
+	}
+	if (vec_patch_bytes_data.size()) {
+		std::cout << "Done." << std::endl;
+	}
+}
 
 int main(int argc, char* argv[]) {
 	++argv;
@@ -122,42 +173,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	std::vector<patch_bytes_data> vec_patch_bytes_data;
-	//cfi bypass
-	if (sym.__cfi_check.offset) {
-		PATCH_AND_CONSUME(sym.__cfi_check, patch_ret_cmd(file_buf, sym.__cfi_check.offset, vec_patch_bytes_data));
-	}
-	if (sym.__cfi_check_fail) {
-		patch_ret_cmd(file_buf, sym.__cfi_check_fail, vec_patch_bytes_data);
-	}
-	if (sym.__cfi_slowpath_diag) {
-		patch_ret_cmd(file_buf, sym.__cfi_slowpath_diag, vec_patch_bytes_data);
-	}
-	if (sym.__cfi_slowpath) {
-		patch_ret_cmd(file_buf, sym.__cfi_slowpath, vec_patch_bytes_data);
-	}
-	if (sym.__ubsan_handle_cfi_check_fail_abort) {
-		patch_ret_cmd(file_buf, sym.__ubsan_handle_cfi_check_fail_abort, vec_patch_bytes_data);
-	}
-	if (sym.__ubsan_handle_cfi_check_fail) {
-		patch_ret_cmd(file_buf, sym.__ubsan_handle_cfi_check_fail, vec_patch_bytes_data);
-	}
-	if (sym.report_cfi_failure) {
-		patch_ret_1_cmd(file_buf, sym.report_cfi_failure, vec_patch_bytes_data);
-	}
-
-	// ignore patch
-	if (sym.drm_dev_printk.offset) {
-		PATCH_AND_CONSUME(sym.drm_dev_printk, patch_ret_cmd(file_buf, sym.drm_dev_printk.offset, vec_patch_bytes_data));
-	}
-	if (sym.dev_printk.offset) {
-		PATCH_AND_CONSUME(sym.dev_printk, patch_ret_cmd(file_buf, sym.dev_printk.offset, vec_patch_bytes_data));
-	}
-	if (sym.register_die_notifier.offset) {
-		PATCH_AND_CONSUME(sym.register_die_notifier, patch_ret_0_cmd(file_buf, sym.register_die_notifier.offset, vec_patch_bytes_data));
-	}
-	if (sym.unregister_die_notifier.offset) {
-		PATCH_AND_CONSUME(sym.unregister_die_notifier, patch_ret_0_cmd(file_buf, sym.unregister_die_notifier.offset, vec_patch_bytes_data));
-	}
+	cfi_bypass(file_buf, sym, vec_patch_bytes_data);
+	no_use_patch(file_buf, sym, vec_patch_bytes_data);
 
 	KernelVersionParser kernel_ver(file_buf);
 	PatchDoExecve patchDoExecve(file_buf, sym);
@@ -235,16 +252,7 @@ int main(int argc, char* argv[]) {
 	std::cout << "#是否需要立即写入修改到文件？（1需要；2不需要）：" << std::endl;
 	std::cin >> need_write_modify_in_file;
 	if (need_write_modify_in_file == 1) {
-		for (auto& item : vec_patch_bytes_data) {
-			std::shared_ptr<char> spData(new (std::nothrow) char[item.str_bytes.length() / 2], std::default_delete<char[]>());
-			hex2bytes((uint8_t*)item.str_bytes.c_str(), (uint8_t*)spData.get());
-			if (!write_file_bytes(file_path, item.write_addr, spData.get(), item.str_bytes.length() / 2)) {
-				std::cout << "写入文件发生错误" << std::endl;
-			}
-		}
-	}
-	if (vec_patch_bytes_data.size()) {
-		std::cout << "Done." << std::endl;
+		write_all_patch(file_path, vec_patch_bytes_data);
 	}
 	system("pause");
 	return 0;
