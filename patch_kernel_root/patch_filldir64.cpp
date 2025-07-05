@@ -56,7 +56,11 @@ size_t PatchFilldir64::patch_filldir64_core(const SymbolRegion& hook_func_start_
 	a->b(CondCode::kLT, label_cycle_name);
 	a->ldp(x9, x10, ptr(sp).post(16));
 	a->ldp(x7, x8, ptr(sp).post(16));
-	a->mov(x0, xzr);
+	if (m_kernel_ver_parser.is_kernel_version_less("6.1.0")) {
+		a->mov(x0, xzr);
+	} else {
+		a->mov(x0, Imm(1));
+	}
 	a->ret(x30);
 	a->bind(label_end);
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
