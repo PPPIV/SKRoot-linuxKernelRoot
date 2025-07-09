@@ -40,12 +40,6 @@ static std::string generate_random_str(std::size_t len) {
 	return key;
 }
 
-static std::string generate_random_root_key(int root_key_len) {
-	std::shared_ptr<char> root_key_data(new (std::nothrow) char[root_key_len], std::default_delete<char[]>());
-	get_rand_str(root_key_data.get(), root_key_len);
-	std::string str_root_key(root_key_data.get(), root_key_len);
-	return str_root_key;
-}
 
 static auto hex2bytes(uint8_t* hex, uint8_t* str) -> void {
 	char high, low;

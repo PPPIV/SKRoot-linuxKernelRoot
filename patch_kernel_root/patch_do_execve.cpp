@@ -79,65 +79,61 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	Label label_cycle_name = a->newLabel();
 	a->embed((const uint8_t*)empty_root_key_buf, sizeof(empty_root_key_buf));
 	a->mov(x0, x0);
-	a->stp(x7, x8, ptr(sp).pre(-16));
-	a->stp(x9, x10, ptr(sp).pre(-16));
-	a->stp(x11, x12, ptr(sp).pre(-16));
-	a->mov(x7, Imm(0xFFFFFFFFFFFFF001));
-	a->cmp(a64::x(m_reg_param.do_execve_key_reg), x7);
+	a->mov(x11, Imm(0xFFFFFFFFFFFFF001));
+	a->cmp(a64::x(m_reg_param.do_execve_key_reg), x11);
 	a->b(CondCode::kCS, label_end);
 	if (m_reg_param.is_single_filename) {
-		a->mov(x7, a64::x(m_reg_param.do_execve_key_reg));
+		a->mov(x11, a64::x(m_reg_param.do_execve_key_reg));
 	} else {
-		a->ldr(x7, ptr(a64::x(m_reg_param.do_execve_key_reg)));
+		a->ldr(x11, ptr(a64::x(m_reg_param.do_execve_key_reg)));
 	}
 	int32_t key_offset = -a->offset();
-	aarch64_asm_adr_x(a, x8, key_offset);
-	a->mov(x9, Imm(0));
+	aarch64_asm_adr_x(a, x12, key_offset);
+	a->mov(x13, Imm(0));
 	a->bind(label_cycle_name);
-	a->ldrb(w10, ptr(x7, x9));
-	a->ldrb(w11, ptr(x8, x9));
-	a->cmp(w10, w11);
+	a->ldrb(w14, ptr(x11, x13));
+	a->ldrb(w15, ptr(x12, x13));
+	a->cmp(w14, w15);
 	a->b(CondCode::kNE, label_end);
-	a->add(x9, x9, Imm(1));
-	a->cmp(x9, Imm(ROOT_KEY_LEN));
+
+	a->add(x13, x13, Imm(1));
+	a->cmp(x13, Imm(ROOT_KEY_LEN));
 	a->b(CondCode::kLT, label_cycle_name);
-	a->mrs(x8, sp_el0_id);
-	a->mov(x10, x8);
+	a->mrs(x12, sp_el0_id);
+	a->mov(x14, x12);
 	for (auto x = 0; x < task_struct_offset_cred.size(); x++) {
 		if (x != task_struct_offset_cred.size() - 1) {
-			a->ldr(x10, ptr(x10, task_struct_offset_cred[x]));
+			a->ldr(x14, ptr(x14, task_struct_offset_cred[x]));
 		}
 	}
-	a->ldr(x10, ptr(x10, task_struct_offset_cred.back()));
-	a->add(x10, x10, Imm(atomic_usage_len));
-	a->str(xzr, ptr(x10).post(8));
-	a->str(xzr, ptr(x10).post(8));
-	a->str(xzr, ptr(x10).post(8));
-	a->str(xzr, ptr(x10).post(8));
-	a->mov(w9, Imm(0xc));
-	a->str(w9, ptr(x10).post(4 + securebits_padding));
-	a->mov(x9, Imm(cap_ability_max));
-	a->stp(x9, x9, ptr(x10).post(16));
-	a->stp(x9, x9, ptr(x10).post(16));
+
+	a->ldr(x14, ptr(x14, task_struct_offset_cred.back()));
+	a->add(x14, x14, Imm(atomic_usage_len));
+	a->str(xzr, ptr(x14).post(8));
+	a->str(xzr, ptr(x14).post(8));
+	a->str(xzr, ptr(x14).post(8));
+	a->str(xzr, ptr(x14).post(8));
+	a->mov(w13, Imm(0xc));
+	a->str(w13, ptr(x14).post(4 + securebits_padding));
+	a->mov(x13, Imm(cap_ability_max));
+	a->stp(x13, x13, ptr(x14).post(16));
+	a->stp(x13, x13, ptr(x14).post(16));
 	if (cap_cnt == 5) {
-		a->str(x9, ptr(x10).post(8));
+		a->str(x13, ptr(x14).post(8));
 	}
 	if (is_thread_info_in_stack) {
-		a->mov(x9, x8);
-		a->and_(x9, x9, Imm((uint64_t)~(0x4000 - 1)));
-		a->ldxr(w10, ptr(x9));
-		a->bic(w10, w10, Imm(0xFFF));
-		a->stxr(w11, w10, ptr(x9));
+		a->mov(x13, x12);
+		a->and_(x13, x13, Imm((uint64_t)~(0x4000 - 1)));
+		a->ldxr(w14, ptr(x13));
+		a->bic(w14, w14, Imm(0xFFF));
+		a->stxr(w15, w14, ptr(x13));
 	} else {
-		a->ldxr(w10, ptr(x8));
-		a->bic(w10, w10, Imm(0xFFF));
-		a->stxr(w11, w10, ptr(x8));
+		a->ldxr(w14, ptr(x12));
+		a->bic(w14, w14, Imm(0xFFF));
+		a->stxr(w15, w14, ptr(x12));
 	}
-	a->str(xzr, ptr(x8, task_struct_offset_seccomp.back()));
+	a->str(xzr, ptr(x12, task_struct_offset_seccomp.back()));
 	a->bind(label_end);
-	a->ldp(x11, x12, ptr(sp).post(16));
-	a->ldp(x9, x10, ptr(sp).post(16));
-	a->ldp(x7, x8, ptr(sp).post(16));
 	aarch64_asm_b(a, (int32_t)(do_execve_entry_hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 

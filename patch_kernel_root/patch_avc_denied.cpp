@@ -24,22 +24,17 @@ size_t PatchAvcDenied::patch_avc_denied_first_guide(const SymbolRegion& hook_fun
 	if (hook_func_start_addr == 0) { return 0; }
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
 	size_t avc_denied_addr = m_avc_denied.offset + m_avc_denied.size - 4;
-	
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	uint32_t sp_el0_id = SysReg::encode(3, 0, 4, 1, 0);
 
-	a->stp(x7, x8, ptr(sp).pre(-16));
-	a->stp(x9, x10, ptr(sp).pre(-16));
-
-	
-	a->mrs(x7, sp_el0_id);
+	a->mrs(x11, sp_el0_id);
 	for (auto x = 0; x < task_struct_offset_cred.size(); x++) {
 		if (x != task_struct_offset_cred.size() - 1) {
-			a->ldr(x7, ptr(x7, task_struct_offset_cred[x]));
+			a->ldr(x11, ptr(x11, task_struct_offset_cred[x]));
 		}
 	}
-	a->ldr(x7, ptr(x7, task_struct_offset_cred.back()));
+	a->ldr(x11, ptr(x11, task_struct_offset_cred.back()));
 
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 
@@ -67,61 +62,36 @@ size_t PatchAvcDenied::patch_avc_denied_core(const SymbolRegion& hook_func_start
 	uint64_t cap_ability_max = get_cap_ability_max();
 	int cap_cnt = get_need_read_cap_cnt();
 
-	
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	Label label_end = a->newLabel();
 	Label label_cycle_uid = a->newLabel();
 	Label label_cycle_cap = a->newLabel();
-	a->add(x7, x7, Imm(atomic_usage_len)); 
-	a->mov(x8, Imm(8));
+
+	a->add(x11, x11, Imm(atomic_usage_len));
+	a->mov(x12, Imm(8));
 	a->bind(label_cycle_uid);
-	a->ldr(w9, ptr(x7).post(4));
-	a->cbnz(w9, label_end);
-	a->subs(x8, x8, Imm(1));
+	a->ldr(w13, ptr(x11).post(4));
+	a->cbnz(w13, label_end);
+	a->subs(x12, x12, Imm(1));
 	a->b(CondCode::kNE, label_cycle_uid);
-	a->mov(w8, Imm(0xc));
-	a->ldr(w9, ptr(x7).post(4 + securebits_padding));
-	a->cmp(w8, w9);
+	a->mov(w12, Imm(0xc));
+	a->ldr(w13, ptr(x11).post(4 + securebits_padding));
+	a->cmp(w12, w13);
 	a->b(CondCode::kNE, label_end);
-	a->mov(x8, Imm(cap_ability_max));
-	a->mov(x9, Imm(cap_cnt));
+	a->mov(x12, Imm(cap_ability_max));
+	a->mov(x13, Imm(cap_cnt));
 	a->bind(label_cycle_cap);
-	a->ldr(x10, ptr(x7).post(8));
-	a->cmp(x10, x8);
+	a->ldr(x14, ptr(x11).post(8));
+	a->cmp(x14, x12);
 	a->b(CondCode::kCC, label_end);
-	a->subs(x9, x9, Imm(1));
+	a->subs(x13, x13, Imm(1));
 	a->b(CondCode::kNE, label_cycle_cap);
 	a->mov(w0, wzr);
 	a->bind(label_end);
-
-	std::cout << print_aarch64_asm(asm_info) << std::endl;
-
-	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
-	if (!sp_bytes) {
-		return 0;
-	}
-	std::string str_bytes = bytes2hex((const unsigned char*)sp_bytes.get(), data_size);
-	size_t shellcode_size = str_bytes.length() / 2;
-	if (shellcode_size > hook_func_start_region.size) {
-		std::cout << "[发生错误] patch_avc_denied failed: not enough kernel space." << std::endl;
-		return 0;
-	}
-	vec_out_patch_bytes_data.push_back({ str_bytes, hook_func_start_addr });
-	return shellcode_size;
-}
-
-size_t PatchAvcDenied::patch_avc_denied_end_guide(const SymbolRegion& hook_func_start_region, std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
-	size_t hook_func_start_addr = hook_func_start_region.offset;
-	if (hook_func_start_addr == 0) { return 0; }
-	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
-
-	aarch64_asm_info asm_info = init_aarch64_asm();
-	auto& a = asm_info.a;
-	a->ldp(x9, x10, ptr(sp).post(16));
-	a->ldp(x7, x8, ptr(sp).post(16));
 	a->ret(x30);
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
+
 	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
 	if (!sp_bytes) {
 		return 0;

@@ -14,10 +14,8 @@ size_t PatchFilldir64::patch_filldir64_root_key_guide(size_t root_key_mem_addr, 
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
-	a->stp(x7, x8, ptr(sp).pre(-16));
-	a->stp(x9, x10, ptr(sp).pre(-16));
 	int root_key_adr_offset = root_key_mem_addr - (hook_func_start_addr + a->offset());
-	aarch64_asm_adr_x(a, x7, root_key_adr_offset);
+	aarch64_asm_adr_x(a, x11, root_key_adr_offset);
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
 	if (!sp_bytes) {
@@ -38,6 +36,7 @@ size_t PatchFilldir64::patch_filldir64_core(const SymbolRegion& hook_func_start_
 	size_t hook_func_start_addr = hook_func_start_region.offset;
 	if (hook_func_start_addr == 0) { return 0; }
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
+	size_t filldir64_entry_hook_jump_back_addr = m_filldir64 + 4;
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	Label label_end = a->newLabel();
@@ -45,17 +44,15 @@ size_t PatchFilldir64::patch_filldir64_core(const SymbolRegion& hook_func_start_
 
 	a->cmp(w2, Imm(16));
 	a->b(CondCode::kNE, label_end);
-	a->mov(x8, Imm(0));
+	a->mov(x12, Imm(0));
 	a->bind(label_cycle_name);
-	a->ldrb(w9, ptr(x1, x8));
-	a->ldrb(w10, ptr(x7, x8));
-	a->cmp(w9, w10);
+	a->ldrb(w13, ptr(x1, x12));
+	a->ldrb(w14, ptr(x11, x12));
+	a->cmp(w13, w14);
 	a->b(CondCode::kNE, label_end);
-	a->add(x8, x8, Imm(1));
-	a->cmp(x8, Imm(16));
+	a->add(x12, x12, Imm(1));
+	a->cmp(x12, Imm(16));
 	a->b(CondCode::kLT, label_cycle_name);
-	a->ldp(x9, x10, ptr(sp).post(16));
-	a->ldp(x7, x8, ptr(sp).post(16));
 	if (m_kernel_ver_parser.is_kernel_version_less("6.1.0")) {
 		a->mov(x0, xzr);
 	} else {
@@ -63,6 +60,8 @@ size_t PatchFilldir64::patch_filldir64_core(const SymbolRegion& hook_func_start_
 	}
 	a->ret(x30);
 	a->bind(label_end);
+	a->mov(x0, x0);
+	aarch64_asm_b(a, (int32_t)(filldir64_entry_hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
 	if (!sp_bytes) {
@@ -74,32 +73,10 @@ size_t PatchFilldir64::patch_filldir64_core(const SymbolRegion& hook_func_start_
 		std::cout << "[发生错误] patch_filldir64 failed: not enough kernel space." << std::endl;
 		return 0;
 	}
-	vec_out_patch_bytes_data.push_back({ str_bytes, hook_func_start_addr });
-	return shellcode_size;
-
-}
-
-size_t PatchFilldir64::patch_filldir64_end_guide(const SymbolRegion& hook_func_start_region, std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
-	size_t hook_func_start_addr = hook_func_start_region.offset;
-	if (hook_func_start_addr == 0) { return 0; }
-	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
-	size_t filldir64_entry_hook_jump_back_addr = m_filldir64 + 4;
-	aarch64_asm_info asm_info = init_aarch64_asm();
-	auto& a = asm_info.a;
-	a->ldp(x9, x10, ptr(sp).post(16));
-	a->ldp(x7, x8, ptr(sp).post(16));
-	a->mov(x0, x0);
-	aarch64_asm_b(a, (int32_t)(filldir64_entry_hook_jump_back_addr - (hook_func_start_addr + a->offset())));
-	std::cout << print_aarch64_asm(asm_info) << std::endl;
-	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
-	if (!sp_bytes) {
-		return 0;
-	}
-	std::string str_bytes = bytes2hex((const unsigned char*)sp_bytes.get(), data_size);
-	size_t shellcode_size = str_bytes.length() / 2;
 	char hookOrigCmd[4] = { 0 };
 	memcpy(&hookOrigCmd, (void*)((size_t)&m_file_buf[0] + m_filldir64), sizeof(hookOrigCmd));
 	std::string strHookOrigCmd = bytes2hex((const unsigned char*)hookOrigCmd, sizeof(hookOrigCmd));
+
 	int end_order_len = a->offset() - 2 * 4;
 	str_bytes = str_bytes.substr(0, (end_order_len) * 2) + strHookOrigCmd + str_bytes.substr((end_order_len + 4) * 2);
 	if (shellcode_size > hook_func_start_region.size) {

@@ -33,8 +33,6 @@ bool SymbolAnalyze::find_symbol_offset() {
 	m_kernel_sym_offset.kernel_halt = parse_symbol_region(kallsyms_matching_single("kernel_halt"));
 	m_kernel_sym_offset.drm_dev_printk = parse_symbol_region(kallsyms_matching_single("drm_dev_printk"));
 	m_kernel_sym_offset.dev_printk = parse_symbol_region(kallsyms_matching_single("__dev_printk"));
-	m_kernel_sym_offset.register_die_notifier = parse_symbol_region(kallsyms_matching_single("register_die_notifier"));
-	m_kernel_sym_offset.unregister_die_notifier = parse_symbol_region(kallsyms_matching_single("unregister_die_notifier"));
 
 	m_kernel_sym_offset.__do_execve_file = kallsyms_matching_single("__do_execve_file");
 	m_kernel_sym_offset.do_execveat_common = kallsyms_matching_single("do_execveat_common");

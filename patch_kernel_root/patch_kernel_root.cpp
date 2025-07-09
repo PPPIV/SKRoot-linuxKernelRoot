@@ -52,12 +52,6 @@ void no_use_patch(const std::vector<char>& file_buf, KernelSymbolOffset &sym, st
 	if (sym.dev_printk.offset) {
 		PATCH_AND_CONSUME(sym.dev_printk, patch_ret_cmd(file_buf, sym.dev_printk.offset, vec_patch_bytes_data));
 	}
-	if (sym.register_die_notifier.offset) {
-		PATCH_AND_CONSUME(sym.register_die_notifier, patch_ret_0_cmd(file_buf, sym.register_die_notifier.offset, vec_patch_bytes_data));
-	}
-	if (sym.unregister_die_notifier.offset) {
-		PATCH_AND_CONSUME(sym.unregister_die_notifier, patch_ret_0_cmd(file_buf, sym.unregister_die_notifier.offset, vec_patch_bytes_data));
-	}
 }
 
 void write_all_patch(const char* file_path, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
@@ -122,10 +116,7 @@ int main(int argc, char* argv[]) {
 
 	std::cout << "drm_dev_printk:" << sym.drm_dev_printk.offset << ", size:" << sym.drm_dev_printk.size << std::endl;
 	std::cout << "dev_printk:" << sym.dev_printk.offset << ", size:" << sym.dev_printk.size << std::endl;
-
-	std::cout << "register_die_notifier:" << sym.register_die_notifier.offset << ", size:" << sym.register_die_notifier.size << std::endl;
-	std::cout << "unregister_die_notifier:" << sym.unregister_die_notifier.offset << ", size:" << sym.unregister_die_notifier.size << std::endl;
-
+	
 	std::cout << "__do_execve_file:" << sym.__do_execve_file << std::endl;
 	std::cout << "do_execveat_common:" << sym.do_execveat_common << std::endl;
 	std::cout << "do_execve_common:" << sym.do_execve_common << std::endl;
@@ -191,11 +182,9 @@ int main(int argc, char* argv[]) {
 		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_end_guide(next_hook_start_region, vec_patch_bytes_data));
 
 		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_end_guide(next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
 
 	} else if (kernel_ver.is_kernel_version_less("6.0.0") && sym.__cfi_check.offset) {
@@ -204,28 +193,20 @@ int main(int argc, char* argv[]) {
 		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_end_guide(next_hook_start_region, vec_patch_bytes_data));
-
 		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_end_guide(next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
 
 	} else if(sym.die.offset && sym.arm64_notify_die.offset && sym.kernel_halt.offset
-		&& sym.drm_dev_printk.offset && sym.dev_printk.offset 
-		&& sym.register_die_notifier.offset && sym.unregister_die_notifier.offset) {
+		&& sym.drm_dev_printk.offset && sym.dev_printk.offset) {
 		first_hook_start = sym.die.offset;
 		PATCH_AND_CONSUME(sym.die, patchDoExecve.patch_do_execve(sym.die, v_cred, v_seccomp, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, sym.die, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_jump(sym.die.offset, sym.dev_printk.offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.dev_printk, patchFilldir64.patch_filldir64_core(sym.dev_printk, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.dev_printk, patchFilldir64.patch_jump(sym.dev_printk.offset, sym.kernel_halt.offset, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.kernel_halt, patchFilldir64.patch_filldir64_end_guide(sym.kernel_halt, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.register_die_notifier, patchAvcDenied.patch_avc_denied_first_guide(sym.register_die_notifier, v_cred, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.register_die_notifier, patchAvcDenied.patch_jump(sym.register_die_notifier.offset, sym.drm_dev_printk.offset, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.kernel_halt, patchAvcDenied.patch_avc_denied_first_guide(sym.kernel_halt, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.kernel_halt, patchAvcDenied.patch_jump(sym.kernel_halt.offset, sym.drm_dev_printk.offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.drm_dev_printk, patchAvcDenied.patch_avc_denied_core(sym.drm_dev_printk, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.drm_dev_printk, patchAvcDenied.patch_jump(sym.drm_dev_printk.offset, sym.unregister_die_notifier.offset, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.unregister_die_notifier, patchAvcDenied.patch_avc_denied_end_guide(sym.unregister_die_notifier, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.arm64_notify_die, patchFreezeTask.patch_freeze_task(sym.arm64_notify_die, v_cred, vec_patch_bytes_data));
 	} else {
 		std::cout << "Failed to find hook start addr" << std::endl;

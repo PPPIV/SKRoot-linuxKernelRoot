@@ -31,30 +31,24 @@ size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_re
 	Label label_end = a->newLabel();
 	Label label_cycle_uid = a->newLabel();
 
-	a->stp(x7, x8, ptr(sp).pre(-16));
-	a->stp(x9, x10, ptr(sp).pre(-16));
-	a->mov(x7, x0);
+	a->mov(x11, x0);
 	for (auto x = 0; x < task_struct_offset_cred.size(); x++) {
 		if (x != task_struct_offset_cred.size() - 1) {
-			a->ldr(x7, ptr(x7, task_struct_offset_cred[x]));
+			a->ldr(x11, ptr(x11, task_struct_offset_cred[x]));
 		}
 	}
-	a->ldr(x7, ptr(x7, task_struct_offset_cred.back()));
-	a->cbz(x7, label_end);
-	a->add(x7, x7, Imm(atomic_usage_len));
-	a->mov(x8, Imm(8));
+	a->ldr(x11, ptr(x11, task_struct_offset_cred.back()));
+	a->cbz(x11, label_end);
+	a->add(x11, x11, Imm(atomic_usage_len));
+	a->mov(x12, Imm(8));
 	a->bind(label_cycle_uid);
-	a->ldr(w9, ptr(x7).post(4));
-	a->cbnz(w9, label_end);
-	a->subs(x8, x8, Imm(1));
+	a->ldr(w13, ptr(x11).post(4));
+	a->cbnz(w13, label_end);
+	a->subs(x12, x12, Imm(1));
 	a->b(CondCode::kNE, label_cycle_uid);
-	a->ldp(x9, x10, ptr(sp).post(16));
-	a->ldp(x7, x8, ptr(sp).post(16));
 	a->mov(w0, wzr);
 	a->ret(x30);
 	a->bind(label_end);
-	a->ldp(x9, x10, ptr(sp).post(16));
-	a->ldp(x7, x8, ptr(sp).post(16));
 	a->mov(x0, x0);
 	aarch64_asm_b(a, (int32_t)(freeze_task_entry_hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
@@ -64,7 +58,6 @@ size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_re
 	}
 	std::string str_bytes = bytes2hex((const unsigned char*)sp_bytes.get(), data_size);
 	size_t shellcode_size = str_bytes.length() / 2;
-	
 	char hookOrigCmd[4] = { 0 };
 	memcpy(&hookOrigCmd, (void*)((size_t)&m_file_buf[0] + m_freeze_task), sizeof(hookOrigCmd));
 	std::string strHookOrigCmd = bytes2hex((const unsigned char*)hookOrigCmd, sizeof(hookOrigCmd));

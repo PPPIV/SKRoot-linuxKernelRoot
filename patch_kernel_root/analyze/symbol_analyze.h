@@ -20,8 +20,6 @@ struct KernelSymbolOffset {
 	SymbolRegion kernel_halt = { 0 };
 	SymbolRegion drm_dev_printk = { 0 };
 	SymbolRegion dev_printk = { 0 };
-	SymbolRegion register_die_notifier = { 0 };
-	SymbolRegion unregister_die_notifier = { 0 };
 
 	size_t __do_execve_file = 0;
 	size_t do_execveat_common = 0;
