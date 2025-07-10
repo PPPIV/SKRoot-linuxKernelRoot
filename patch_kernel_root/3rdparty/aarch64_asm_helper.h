@@ -6,8 +6,8 @@
 #include <iomanip>
 
 #define ASMJIT_STATIC
-#include "asmjit2-src/src/asmjit/asmjit.h"
-#include "asmjit2-src/src/asmjit/arm/a64assembler.h"
+#include "asmjit2-src/src/asmjit/core.h"
+#include "asmjit2-src/src/asmjit/a64.h"
 
 class MyAsmJitErrorHandler : public asmjit::ErrorHandler {
 public:
