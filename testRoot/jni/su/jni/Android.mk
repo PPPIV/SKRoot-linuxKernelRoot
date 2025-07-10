@@ -8,6 +8,6 @@ LOCAL_SRC_FILES := \
 
 LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/../../
-LOCAL_CPPFLAGS         += -std=c++17 -fPIE -fvisibility=hidden -fexceptions
+LOCAL_CPPFLAGS         += -std=c++20 -fPIE -fvisibility=hidden -fexceptions
 LOCAL_LDFLAGS          += -fPIE -pie
 include $(BUILD_EXECUTABLE)

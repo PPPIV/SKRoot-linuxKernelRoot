@@ -8,7 +8,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <filesystem>
-#include "simple_encryptor.h"
+#include "kernel_root_kit/core/rootkit_simple_encryptor.h"
 
 namespace kernel_root{
 namespace su{
