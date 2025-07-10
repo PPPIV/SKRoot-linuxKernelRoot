@@ -22,9 +22,6 @@ namespace {
 
 	static int idx_of(char c) {
 		auto pos = alphabet62.find(c);
-		if (pos == std::string::npos) {
-			throw std::invalid_argument(std::string("Invalid char: ") + c);
-		}
 		return (int)pos;
 	}
 
@@ -33,7 +30,7 @@ namespace {
 static std::string simple_encrypt_with_key(const std::string& plain, char key) {
 	size_t N = plain.size();
 	if (N == 0) {
-		throw std::invalid_argument("Plaintext cannot be empty");
+		return {};
 	}
 	int ki = idx_of(key);
 	std::string cipher;
@@ -56,7 +53,7 @@ static std::string simple_encrypt(const std::string& plain) {
 static std::string simple_decrypt_with_key(const std::string& cipher, char key) {
 	const size_t L = cipher.size();
 	if (L <= 1) {
-		throw std::invalid_argument("Ciphertext length must be > 1");
+		return {};
 	}
 	size_t N = L - 1;
 
@@ -76,7 +73,7 @@ static std::string simple_decrypt_with_key(const std::string& cipher, char key) 
 
 static std::string simple_decrypt(const std::string& cipher) {
 	if (cipher.size() <= 1) {
-		throw std::invalid_argument("Ciphertext length must be > 1");
+		return {};
 	}
 	return simple_decrypt_with_key(cipher, cipher[0]);
 }
@@ -99,10 +96,6 @@ static std::size_t from_base62(const std::string& s) {
 	std::size_t val = 0;
 	for (char c : s) {
 		std::size_t idx = alphabet62.find(c);
-		if (idx == std::string::npos) {
-			throw std::invalid_argument(
-				std::string("Invalid character in base62 string: ") + c);
-		}
 		val = val * BASE62 + idx;
 	}
 	return val;
