@@ -3,11 +3,13 @@
 #include <vector>
 #include "patch_base.h"
 
+#pragma pack(push, 1)
 struct ExecveParam {
-	size_t do_execve_addr = 0;
-	size_t do_execve_key_reg = 0;
-	bool is_single_filename = false;
+	uint32_t do_execve_addr = 0;
+	char     do_execve_key_reg = 0;
+	bool     is_single_filename = false;
 };
+#pragma pack(pop)
 
 class PatchDoExecve : public PatchBase
 {
