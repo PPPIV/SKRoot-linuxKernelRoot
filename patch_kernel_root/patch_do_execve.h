@@ -21,9 +21,9 @@ public:
 	size_t patch_root_key(const std::string& root_key, size_t write_addr, std::vector<patch_bytes_data>& vec_out_patch_bytes_data);
 
 private:
-	ExecveParam get_do_execve_param(const KernelSymbolOffset& sym);
+	void init_do_execve_param(const KernelSymbolOffset& sym);
 	int get_need_write_cap_cnt();
 	bool is_thread_info_in_stack_bottom();
 
-	ExecveParam m_reg_param = { 0 };
+	ExecveParam m_doexecve_reg_param = { 0 };
 };
