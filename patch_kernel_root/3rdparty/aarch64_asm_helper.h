@@ -144,6 +144,26 @@ static void aarch64_asm_mov_x(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit
 	}
 }
 
+static void aarch64_asm_mov_w(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit::a64::GpW w, uint32_t value) {
+	bool isInitialized = false;
+	for (int idx = 0; idx < 2; ++idx) {
+		uint16_t imm16 = (value >> (idx * 16)) & 0xFFFF;
+		if (imm16 == 0)
+			continue;
+
+		if (!isInitialized) {
+			a->movz(w, imm16, idx * 16);
+			isInitialized = true;
+		}
+		else {
+			a->movk(w, imm16, idx * 16);
+		}
+	}
+	if (!isInitialized) {
+		a->movz(w, 0, 0);
+	}
+}
+
 static bool aarch64_asm_pacia(std::unique_ptr<asmjit::a64::Assembler>& a, const asmjit::a64::GpX& reg) {
 	uint32_t reg_n = reg.id();
 	if (reg_n > 31) {

@@ -177,7 +177,7 @@ int main(int argc, char* argv[]) {
 	size_t shellcode_size = 0;
 	std::vector<size_t> v_hook_func_start_addr;
 	if (kernel_ver.is_kernel_version_less("5.5.0")) {
-		SymbolRegion next_hook_start_region = { 0x200, 0x200 };
+		SymbolRegion next_hook_start_region = { 0x200, 0x250 };
 		first_hook_start = next_hook_start_region.offset;
 		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
