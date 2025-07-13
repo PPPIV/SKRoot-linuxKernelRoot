@@ -252,10 +252,8 @@ ssize_t inject_process_env64_PATH_wrapper(const char* str_root_key, int target_p
 		p_munmap_offset,
 		p_getenv_offset,
 		p_setenv_offset);
-	if (ret != ERR_NONE) {
-		ROOT_PRINTF("_load_libc64_modify_env_func_addr error:%d\n", ret);
-		return ret;
-	}
+	ROOT_PRINTF("_load_libc64_modify_env_func_addr error:%d\n", ret);
+	RETURN_ON_ERROR(err);
 	ROOT_PRINTF("p_mmap_offset:%zu\n", p_mmap_offset);
 	ROOT_PRINTF("p_munmap_offset:%zu\n", p_munmap_offset);
 	ROOT_PRINTF("p_getenv_offset:%zu\n", p_getenv_offset);

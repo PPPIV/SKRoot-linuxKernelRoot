@@ -52,7 +52,7 @@ bool SymbolAnalyze::find_symbol_offset() {
 	if (m_kernel_sym_offset.avc_denied.offset == 0) {
 		m_kernel_sym_offset.avc_denied = parse_symbol_region(kallsyms_matching_single("avc_denied", true));
 	}
-	m_kernel_sym_offset.filldir64 = kallsyms_matching_single("filldir64", true);
+	m_kernel_sym_offset.filldir64 = kallsyms_matching_single("filldir64");
 	m_kernel_sym_offset.freeze_task = kallsyms_matching_single("freeze_task");
 
 	m_kernel_sym_offset.revert_creds = kallsyms_matching_single("revert_creds");

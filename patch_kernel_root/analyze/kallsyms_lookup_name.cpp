@@ -170,7 +170,7 @@ bool KallsymsLookupName::find_kallsyms_names_list(int kallsyms_num, size_t kalls
 
 
 bool KallsymsLookupName::find_kallsyms_markers_list(int kallsyms_num, size_t name_list_end_offset, size_t& markers_list_start, size_t& markers_list_end) {
-	size_t start = align8(name_list_end_offset);
+	size_t start = align_up<8>(name_list_end_offset);
 	const int var_len = sizeof(long);
 	for (auto x = start; x + var_len < m_file_buf.size(); x += var_len) {
 		long val1 = *(long*)&m_file_buf[x];
@@ -204,7 +204,7 @@ bool KallsymsLookupName::find_kallsyms_markers_list(int kallsyms_num, size_t nam
 		}
 	}
 	if (is_align8) {
-		size_t back_val = align8(markers_list_start) - markers_list_start;
+		size_t back_val = align_up<8>(markers_list_start) - markers_list_start;
 		if (back_val == 0) {
 			markers_list_start -= 8;
 		}
@@ -221,7 +221,7 @@ bool KallsymsLookupName::find_kallsyms_markers_list(int kallsyms_num, size_t nam
 }
 
 bool KallsymsLookupName::find_kallsyms_token_table(size_t markers_list_end_offset, size_t& kallsyms_token_table_start, size_t& kallsyms_token_table_end) {
-	size_t start = align8(markers_list_end_offset);
+	size_t start = align_up<8>(markers_list_end_offset);
 	const int var_len = sizeof(long);
 	for (auto x = start; x + var_len < m_file_buf.size(); x += var_len) {
 		long val1 = *(long*)&m_file_buf[x];
@@ -241,7 +241,7 @@ bool KallsymsLookupName::find_kallsyms_token_table(size_t markers_list_end_offse
 }
 
 bool KallsymsLookupName::find_kallsyms_token_index(size_t kallsyms_token_table_end, size_t& kallsyms_token_index_start) {
-	size_t start = align8(kallsyms_token_table_end);
+	size_t start = align_up<8>(kallsyms_token_table_end);
 	const int var_len = sizeof(short);
 	for (auto x = start; x + var_len < m_file_buf.size(); x += var_len) {
 		short val1 = *(short*)&m_file_buf[x];

@@ -88,9 +88,8 @@ static bool write_file_bytes(const char* file_path, size_t offset, const char* b
 	return true;
 }
 
-static size_t align8(size_t value) {
-	if (value % 8 != 0) {
-		value = (value + 7) & ~static_cast<size_t>(7);  // Align to next 8-byte boundary
-	}
-	return value;
+template <size_t N>
+static inline constexpr size_t align_up(size_t v) {
+	static_assert((N & (N - 1)) == 0, "N must be power of two");
+	return (v + (N - 1)) & ~(N - 1);
 }

@@ -46,3 +46,9 @@ enum KERNEL_ROOT_ERR{
 	ERR_DLOPEN_FILE,
 	ERR_PID_NOT_FOUND,
 };
+#define RETURN_ON_ERROR(expr)             \
+    do {                                  \
+        ssize_t _err = (expr);            \
+        if (_err != ERR_MODULE_NONE)      \
+            return _err;                  \
+    } while (0)

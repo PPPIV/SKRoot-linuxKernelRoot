@@ -274,10 +274,7 @@ ssize_t write_root_server_so_file(const char* str_root_key, const char* implant_
 	
 	ssize_t err = safe_upx_file(str_root_key, implant_so_full_path);
 	random_expand_file(std::string(implant_so_full_path));
-	if(err != ERR_NONE) {
-		return err;
-	}
-    return ERR_NONE;
+    return err;
 }
 ssize_t parasite_implant_app(const char* str_root_key, const char* target_pid_cmdline, const char* original_so_full_path, const char* su_folder_path) {
 	std::filesystem::path path(original_so_full_path);
@@ -290,9 +287,7 @@ ssize_t parasite_implant_app(const char* str_root_key, const char* target_pid_cm
 	}
 	remove(implant_so_full_path.c_str());
 	ssize_t err = write_root_server_so_file(str_root_key, implant_so_full_path.c_str(), su_folder_path);
-	if(err != ERR_NONE) {
-		return err;
-	}
+	RETURN_ON_ERROR(err);
 	return _internal_parasite_implant_app(str_root_key, target_pid_cmdline, original_so_full_path, implant_so_full_path.c_str());
 }
 
@@ -343,9 +338,7 @@ ssize_t write_su_env_so_file(const char* str_root_key, const char* implant_so_fu
 
 	ssize_t err = safe_upx_file(str_root_key, implant_so_full_path);
 	random_expand_file(std::string(implant_so_full_path));
-	if(err != ERR_NONE) {
-		return err;
-	}
+	RETURN_ON_ERROR(err);
     return ERR_NONE;
 }
 
@@ -360,9 +353,7 @@ ssize_t parasite_implant_su_env(const char* str_root_key, const char* target_pid
 	}
 	remove(implant_so_full_path.c_str());
 	ssize_t err = write_su_env_so_file(str_root_key, implant_so_full_path.c_str(), su_folder);
-	if(err != ERR_NONE) {
-		return err;
-	}
+	RETURN_ON_ERROR(err);
 	return _internal_parasite_implant_app(str_root_key, target_pid_cmdline, original_so_full_path, implant_so_full_path.c_str());
 }
 
