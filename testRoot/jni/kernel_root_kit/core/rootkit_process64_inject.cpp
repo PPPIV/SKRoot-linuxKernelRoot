@@ -24,7 +24,7 @@
 
 namespace kernel_root {
 
-int _load_libc64_modify_env_func_addr(
+ssize_t _load_libc64_modify_env_func_addr(
 	const char* str_root_key,
 	const char* so_path,
 	api_offset_read_mode api_mode,
@@ -33,7 +33,7 @@ int _load_libc64_modify_env_func_addr(
 	size_t& p_getenv_offset,
 	size_t& p_setenv_offset) {
 
-	int ret = ERR_NONE;
+	ssize_t ret = ERR_NONE;
 	std::map<std::string, uint64_t> func_symbol_map;
 	func_symbol_map["getenv"] = 0;
 	func_symbol_map["setenv"] = 0;
@@ -244,7 +244,7 @@ ssize_t inject_process_env64_PATH_wrapper(const char* str_root_key, int target_p
 	size_t p_munmap_offset;
 	size_t p_getenv_offset;
 	size_t p_setenv_offset;
-	int ret = _load_libc64_modify_env_func_addr(
+	ssize_t ret = _load_libc64_modify_env_func_addr(
 		str_root_key,
 		target_process_libc_so_path.c_str(),
 		api_mode,

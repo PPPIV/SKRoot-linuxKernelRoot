@@ -38,7 +38,7 @@ static bool is_elf64_file(int fd) {
 	return false;
 }
 
-static int read_elf64_file_symbol_addr(const char* so_path, std::map<std::string, uint64_t>& func_symbol_map) {
+static ssize_t read_elf64_file_symbol_addr(const char* so_path, std::map<std::string, uint64_t>& func_symbol_map) {
 	int fd;
 	char* mod;
 	unsigned int size, i, j, shn, n;
@@ -95,7 +95,7 @@ static int read_elf64_file_symbol_addr(const char* so_path, std::map<std::string
 	return ERR_NONE;
 }
 
-int find_mem_elf64_symbol_address(const char *so_path, std::map<std::string, uint64_t>& func_symbol_map) {
+ssize_t find_mem_elf64_symbol_address(const char *so_path, std::map<std::string, uint64_t>& func_symbol_map) {
     void* p_so_addr = get_module_base(-1, so_path);
 	void* p_so = dlopen(so_path, RTLD_NOW | RTLD_GLOBAL);
 	if (!p_so || !p_so_addr) {

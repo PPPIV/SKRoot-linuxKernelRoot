@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <type_traits>
 #define EXTRA_ERR_MULT 1000
 enum KERNEL_ROOT_ERR{
 	ERR_NONE = 0,
@@ -46,16 +47,24 @@ enum KERNEL_ROOT_ERR{
 	ERR_DLOPEN_FILE,
 	ERR_PID_NOT_FOUND,
 };
-#define RETURN_ON_ERROR(expr)             \
-    do {                                  \
-        ssize_t _err = (expr);            \
-        if (_err != ERR_NONE)      \
-            return _err;                  \
+#define RETURN_ON_ERROR(expr)                                             \
+    do {                                                                  \
+        static_assert(                                                   \
+            std::is_same<decltype(expr), ssize_t>::value,                \
+            "RETURN_ON_ERROR: expr 必须返回 ssize_t"                       \
+        );                                                                \
+        ssize_t _err = (expr);                                            \
+        if (_err != ERR_NONE)                                      \
+            return _err;                                                  \
     } while (0)
 
-#define BREAK_ON_ERROR(expr)               \
-    {                                      \
-        ssize_t _err = (expr);             \
-        if (_err != ERR_NONE)       \
-            break;                         \
-    }
+#define BREAK_ON_ERROR(expr)                                              \
+    do {                                                                  \
+        static_assert(                                                   \
+            std::is_same<decltype(expr), ssize_t>::value,                \
+            "BREAK_ON_ERROR: expr 必须返回 ssize_t"                        \
+        );                                                                \
+        ssize_t _err = (expr);                                            \
+        if (_err != ERR_NONE)                                      \
+            break;                                                        \
+    } while (0)
