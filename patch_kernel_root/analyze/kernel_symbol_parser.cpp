@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include "kernel_symbol_parser.h"
 #include <sstream>
+#include <algorithm>
+#include <unordered_map>
 
 #ifndef MIN
 #define MIN(x, y)(x < y) ? (x) : (y)
@@ -74,23 +76,40 @@ uint64_t KernelSymbolParser::kallsyms_lookup_name(const char* name) {
 }
 
 std::unordered_map<std::string, uint64_t> KernelSymbolParser::kallsyms_lookup_names_like(const char* name) {
-	std::unordered_map<std::string, uint64_t> all_symbols;
-	if (m_kallsyms_lookup_name_6_6_30.is_inited()) {
-		all_symbols = m_kallsyms_lookup_name_6_6_30.kallsyms_on_each_symbol();
-	} else if (m_kallsyms_lookup_name_6_1_60.is_inited()) {
-		all_symbols = m_kallsyms_lookup_name_6_1_60.kallsyms_on_each_symbol();
-	} else if (m_kallsyms_lookup_name_6_1_42.is_inited()) {
-		all_symbols = m_kallsyms_lookup_name_6_1_42.kallsyms_on_each_symbol();
-	} else if (m_kallsyms_lookup_name_4_6_0.is_inited()) {
-		all_symbols = m_kallsyms_lookup_name_4_6_0.kallsyms_on_each_symbol();
-	} else if (m_kallsyms_lookup_name.is_inited()) {
-		all_symbols = m_kallsyms_lookup_name.kallsyms_on_each_symbol();
-	}
-	std::unordered_map<std::string, uint64_t> result;
-	for (const auto& [sym_name, addr] : all_symbols) {
-		if (sym_name.find(name) != std::string::npos) {
-			result[sym_name] = addr;
+    std::unordered_map<std::string, uint64_t> all_symbols;
+    if (m_kallsyms_lookup_name_6_6_30.is_inited()) {
+        all_symbols = m_kallsyms_lookup_name_6_6_30.kallsyms_on_each_symbol();
+    } else if (m_kallsyms_lookup_name_6_1_60.is_inited()) {
+        all_symbols = m_kallsyms_lookup_name_6_1_60.kallsyms_on_each_symbol();
+    } else if (m_kallsyms_lookup_name_6_1_42.is_inited()) {
+        all_symbols = m_kallsyms_lookup_name_6_1_42.kallsyms_on_each_symbol();
+    } else if (m_kallsyms_lookup_name_4_6_0.is_inited()) {
+        all_symbols = m_kallsyms_lookup_name_4_6_0.kallsyms_on_each_symbol();
+    } else if (m_kallsyms_lookup_name.is_inited()) {
+        all_symbols = m_kallsyms_lookup_name.kallsyms_on_each_symbol();
+    }
+
+    static const std::vector<std::string> skip_suffixes = {
+        ".cfi_jt",
+    };
+
+    std::unordered_map<std::string, uint64_t> result;
+    for (const auto& [sym_name, addr] : all_symbols) {
+        if (sym_name.find(name) == std::string::npos) {
+            continue;
 		}
-	}
-	return result;
+        bool skip = std::any_of(
+            skip_suffixes.begin(), skip_suffixes.end(),
+            [&](const std::string& suf) {
+                return sym_name.size() >= suf.size()
+                    && sym_name.compare(
+                           sym_name.size() - suf.size(),
+                           suf.size(), suf) == 0;
+            });
+        if (skip) {
+            continue;
+		}
+        result[sym_name] = addr;
+    }
+    return result;
 }
