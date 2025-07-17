@@ -55,6 +55,7 @@ public:
 	KernelSymbolOffset get_symbol_offset();
 private:
 	bool find_symbol_offset();
+	void printf_symbol_offset();
 	uint64_t kallsyms_matching_single(const char* name, bool fuzzy = false);
 	std::unordered_map<std::string, uint64_t> kallsyms_matching_all(const char* name);
 	SymbolRegion parse_symbol_region(uint64_t offset);

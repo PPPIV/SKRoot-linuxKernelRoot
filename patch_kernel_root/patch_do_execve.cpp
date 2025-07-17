@@ -78,7 +78,7 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	Label label_cycle_name = a->newLabel();
 	a->embed((const uint8_t*)empty_root_key_buf, sizeof(empty_root_key_buf));
 	a->mov(x0, x0);
-	a->mov(x11, Imm(0xFFFFFFFFFFFFF001));
+	a->mov(x11, Imm(uint64_t(-4095)));
 	a->cmp(a64::x(m_doexecve_reg_param.do_execve_key_reg), x11);
 	a->b(CondCode::kCS, label_end);
 	if (m_doexecve_reg_param.is_single_filename) {

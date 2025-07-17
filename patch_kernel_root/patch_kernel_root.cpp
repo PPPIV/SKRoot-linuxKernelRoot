@@ -108,36 +108,6 @@ int main(int argc, char* argv[]) {
 	}
 	KernelSymbolOffset sym = symbol_analyze.get_symbol_offset();
 
-	std::cout << "_text:" << sym._text << std::endl;
-	std::cout << "_stext:" << sym._stext << std::endl;
-	std::cout << "die:" << sym.die.offset << ", size:" << sym.die.size << std::endl;
-	std::cout << "arm64_notify_die:" << sym.arm64_notify_die.offset << ", size:" << sym.arm64_notify_die.size << std::endl;
-	std::cout << "kernel_halt:" << sym.kernel_halt.offset << ", size:" << sym.kernel_halt.size << std::endl;
-
-	std::cout << "drm_dev_printk:" << sym.drm_dev_printk.offset << ", size:" << sym.drm_dev_printk.size << std::endl;
-	std::cout << "dev_printk:" << sym.dev_printk.offset << ", size:" << sym.dev_printk.size << std::endl;
-	
-	std::cout << "__do_execve_file:" << sym.__do_execve_file << std::endl;
-	std::cout << "do_execveat_common:" << sym.do_execveat_common << std::endl;
-	std::cout << "do_execve_common:" << sym.do_execve_common << std::endl;
-	std::cout << "do_execveat:" << sym.do_execveat << std::endl;
-	std::cout << "do_execve:" << sym.do_execve << std::endl;
-
-	std::cout << "avc_denied:" << sym.avc_denied.offset << ", size:" << sym.avc_denied.size << std::endl;
-	std::cout << "filldir64:" << sym.filldir64 << std::endl;
-	std::cout << "freeze_task:" << sym.freeze_task << std::endl;
-
-	std::cout << "revert_creds:" << sym.revert_creds << std::endl;
-	std::cout << "prctl_get_seccomp:" << sym.prctl_get_seccomp << std::endl;
-
-	std::cout << "__cfi_check:" << sym.__cfi_check.offset << ", size:" << sym.__cfi_check.size << std::endl;
-	std::cout << "__cfi_check_fail:" << sym.__cfi_check_fail << std::endl;
-	std::cout << "__cfi_slowpath_diag:" << sym.__cfi_slowpath_diag << std::endl;
-	std::cout << "__cfi_slowpath:" << sym.__cfi_slowpath << std::endl;
-	std::cout << "__ubsan_handle_cfi_check_fail_abort:" << sym.__ubsan_handle_cfi_check_fail_abort << std::endl;
-	std::cout << "__ubsan_handle_cfi_check_fail:" << sym.__ubsan_handle_cfi_check_fail << std::endl;
-	std::cout << "report_cfi_failure:" << sym.report_cfi_failure << std::endl;
-
 	std::string t_mode_name;
 	std::vector<size_t> v_cred;
 	std::vector<size_t> v_seccomp;
