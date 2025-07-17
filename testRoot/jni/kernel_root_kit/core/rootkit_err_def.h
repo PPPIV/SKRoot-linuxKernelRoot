@@ -49,6 +49,13 @@ enum KERNEL_ROOT_ERR{
 #define RETURN_ON_ERROR(expr)             \
     do {                                  \
         ssize_t _err = (expr);            \
-        if (_err != ERR_MODULE_NONE)      \
+        if (_err != ERR_NONE)      \
             return _err;                  \
     } while (0)
+
+#define BREAK_ON_ERROR(expr)               \
+    {                                      \
+        ssize_t _err = (expr);             \
+        if (_err != ERR_NONE)       \
+            break;                         \
+    }

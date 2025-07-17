@@ -52,9 +52,7 @@ ssize_t upx_file(const char* str_root_key, const char* file_path) {
 	sstr << " -" << random_number << " -o " << file_path_upx << " " << file_path;
 	ssize_t err = kernel_root::safe_root_exec_process(str_root_key, sstr.str().c_str());
 	do {
-		if(err != ERR_NONE) {
-			break;
-		}
+		BREAK_ON_ERROR(err);
 		if(!std::filesystem::exists(file_path_upx)) {
 			err = ERR_UPX;
 			break;

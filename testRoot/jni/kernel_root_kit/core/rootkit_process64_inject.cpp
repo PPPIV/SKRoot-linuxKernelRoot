@@ -297,9 +297,8 @@ ssize_t safe_inject_process_env64_PATH_wrapper(const char* str_root_key, int tar
 			out_err = ERR_READ_CHILD_STRING;
 		}
 	}
-	if(out_err != ERR_NONE) {
-		return out_err;
-	} else if(libc_path.empty()) {
+	RETURN_ON_ERROR(out_err);
+	if(libc_path.empty()) {
 		out_err = ERR_LIBC_PATH_EMPTY;
 		return out_err;
 	}
@@ -319,10 +318,9 @@ ssize_t safe_inject_process_env64_PATH_wrapper(const char* str_root_key, int tar
 		p_getenv_offset,
 		p_setenv_offset);
 
-	if (out_err != ERR_NONE) {
-		ROOT_PRINTF("_load_libc64_modify_env_func_addr error:%zd\n", out_err);
-		return out_err;
-	}
+	ROOT_PRINTF("_load_libc64_modify_env_func_addr error:%zd\n", out_err);
+	RETURN_ON_ERROR(out_err);
+
 	ROOT_PRINTF("p_mmap_offset:%zu\n", p_mmap_offset);
 	ROOT_PRINTF("p_munmap_offset:%zu\n", p_munmap_offset);
 	ROOT_PRINTF("p_getenv_offset:%zu\n", p_getenv_offset);
