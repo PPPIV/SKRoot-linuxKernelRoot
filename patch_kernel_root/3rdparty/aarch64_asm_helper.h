@@ -86,6 +86,21 @@ static bool aarch64_asm_bl(std::unique_ptr<asmjit::a64::Assembler>& a, int32_t b
 	return true;
 }
 
+static bool is_aarch64_asm_b(uint32_t instr) {
+	constexpr uint32_t B_MASK = 0xFC000000u;
+	constexpr uint32_t B_PATTERN = 0x14000000u;
+	return (instr & B_MASK) == B_PATTERN;
+}
+
+static int32_t extract_aarch64_asm_b_value(uint32_t instr) {
+	int32_t imm26 = instr & 0x03FFFFFF;
+
+	if (imm26 & (1 << 25)) {
+		imm26 |= ~((1 << 26) - 1);
+	}
+	return imm26 << 2;
+}
+
 static bool aarch64_asm_adr_x(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit::a64::GpX x, int32_t adr_value) {
 	if (adr_value % 4 != 0) {
 		std::cout << "[发生错误] The ADR instruction offset must be a multiple of 4" << std::endl;
