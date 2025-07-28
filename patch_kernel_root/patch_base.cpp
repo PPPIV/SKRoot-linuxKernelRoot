@@ -9,12 +9,34 @@ PatchBase::PatchBase(const std::vector<char>& file_buf) : m_file_buf(file_buf), 
 
 PatchBase::~PatchBase() {}
 
-int PatchBase::get_cred_atomic_usage_len() {
+int PatchBase::get_cred_atomic_usage_len() { 
 	int len = 8;
 	if (m_kernel_ver_parser.is_kernel_version_less("6.6.0")) {
 		len = 4;
 	}
 	return len;
+}
+
+int PatchBase::get_cred_uid_region_len() {
+	const int uid = 4;
+	const int gid = 4;
+	const int suid = 4;
+	const int sgid = 4;
+	const int euid = 4;
+	const int egid = 4;
+	const int fsuid = 4;
+	const int fsgid = 4;
+	return uid + gid + suid + sgid + euid + egid + fsuid + fsgid;
+}
+
+int PatchBase::get_cred_euid_start_pos() {
+	int start_pos = get_cred_atomic_usage_len();
+	const int uid = 4;
+	const int gid = 4;
+	const int suid = 4;
+	const int sgid = 4;
+	start_pos += uid + gid + suid + sgid;
+	return start_pos;
 }
 
 int PatchBase::get_cred_securebits_padding() {

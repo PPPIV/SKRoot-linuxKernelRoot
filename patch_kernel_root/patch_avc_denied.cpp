@@ -24,6 +24,7 @@ size_t PatchAvcDenied::patch_avc_denied_first_guide(const SymbolRegion& hook_fun
 	if (hook_func_start_addr == 0) { return 0; }
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
 	size_t avc_denied_addr = m_avc_denied.offset + m_avc_denied.size - 4;
+
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	uint32_t sp_el0_id = SysReg::encode(3, 0, 4, 1, 0);
@@ -57,24 +58,19 @@ size_t PatchAvcDenied::patch_avc_denied_core(const SymbolRegion& hook_func_start
 	size_t hook_func_start_addr = hook_func_start_region.offset;
 	if (hook_func_start_addr == 0) { return 0; }
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
-	int atomic_usage_len = get_cred_atomic_usage_len();
+	int uid_region_len = get_cred_uid_region_len();
+	int cred_euid_start_pos = get_cred_euid_start_pos();
 	int securebits_padding = get_cred_securebits_padding();
 	uint64_t cap_ability_max = get_cap_ability_max();
 	int cap_cnt = get_need_read_cap_cnt();
-
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	Label label_end = a->newLabel();
-	Label label_cycle_uid = a->newLabel();
 	Label label_cycle_cap = a->newLabel();
 
-	a->add(x11, x11, Imm(atomic_usage_len));
-	a->mov(x12, Imm(8));
-	a->bind(label_cycle_uid);
-	a->ldr(w13, ptr(x11).post(4));
-	a->cbnz(w13, label_end);
-	a->subs(x12, x12, Imm(1));
-	a->b(CondCode::kNE, label_cycle_uid);
+	a->add(x11, x11, Imm(cred_euid_start_pos));
+	a->ldr(w12, ptr(x11).post(uid_region_len - cred_euid_start_pos));
+	a->cbnz(w12, label_end);
 	a->mov(w12, Imm(0xc));
 	a->ldr(w13, ptr(x11).post(4 + securebits_padding));
 	a->cmp(w12, w13);
@@ -87,6 +83,7 @@ size_t PatchAvcDenied::patch_avc_denied_core(const SymbolRegion& hook_func_start
 	a->b(CondCode::kCC, label_end);
 	a->subs(x13, x13, Imm(1));
 	a->b(CondCode::kNE, label_cycle_cap);
+
 	a->mov(w0, wzr);
 	a->bind(label_end);
 	a->ret(x30);

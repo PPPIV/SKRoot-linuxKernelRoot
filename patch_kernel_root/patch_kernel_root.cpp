@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
 	++argv;
 	--argc;
 
-	std::cout << "本工具用于生成SKRoot(Lite) ARM64 Linux内核ROOT提权代码 V7" << std::endl << std::endl;
+	std::cout << "本工具用于生成SKRoot(Lite) ARM64 Linux内核ROOT提权代码 V8" << std::endl << std::endl;
 
 #ifdef _DEBUG
 #else

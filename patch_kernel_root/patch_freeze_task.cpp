@@ -8,28 +8,19 @@ PatchFreezeTask::PatchFreezeTask(const std::vector<char>& file_buf, size_t freez
 
 PatchFreezeTask::~PatchFreezeTask() {}
 
-int PatchFreezeTask::get_need_read_cap_cnt() {
-	int cnt = get_cap_cnt();
-	if (cnt < 5) {
-		cnt = 3;
-	}
-	return cnt;
-}
-
 size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_region, const std::vector<size_t>& task_struct_offset_cred,
 	std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
 	size_t hook_func_start_addr = hook_func_start_region.offset; 
 	if (hook_func_start_addr == 0) { return 0; }
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
 
-	int atomic_usage_len = get_cred_atomic_usage_len();
+	int cred_euid_start_pos = get_cred_euid_start_pos();
 
 	size_t freeze_task_entry_hook_jump_back_addr = m_freeze_task + 4;
 
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	Label label_end = a->newLabel();
-	Label label_cycle_uid = a->newLabel();
 
 	a->mov(x11, x0);
 	for (auto x = 0; x < task_struct_offset_cred.size(); x++) {
@@ -39,25 +30,23 @@ size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_re
 	}
 	a->ldr(x11, ptr(x11, task_struct_offset_cred.back()));
 	a->cbz(x11, label_end);
-	a->add(x11, x11, Imm(atomic_usage_len));
-	a->mov(x12, Imm(8));
-	a->bind(label_cycle_uid);
-	a->ldr(w13, ptr(x11).post(4));
-	a->cbnz(w13, label_end);
-	a->subs(x12, x12, Imm(1));
-	a->b(CondCode::kNE, label_cycle_uid);
+	a->add(x11, x11, Imm(cred_euid_start_pos));
+	a->ldr(w12, ptr(x11));
+	a->cbnz(w12, label_end);
 	a->mov(w0, wzr);
 	a->ret(x30);
 	a->bind(label_end);
 	a->mov(x0, x0);
 	aarch64_asm_b(a, (int32_t)(freeze_task_entry_hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
+
 	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
 	if (!sp_bytes) {
 		return 0;
 	}
 	std::string str_bytes = bytes2hex((const unsigned char*)sp_bytes.get(), data_size);
 	size_t shellcode_size = str_bytes.length() / 2;
+
 	char hookOrigCmd[4] = { 0 };
 	memcpy(&hookOrigCmd, (void*)((size_t)&m_file_buf[0] + m_freeze_task), sizeof(hookOrigCmd));
 	std::string strHookOrigCmd = bytes2hex((const unsigned char*)hookOrigCmd, sizeof(hookOrigCmd));

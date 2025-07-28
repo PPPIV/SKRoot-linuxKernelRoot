@@ -93,7 +93,7 @@ bool KallsymsLookupName_4_6_0::init() {
 	}
 	std::cout << std::hex << "kallsyms_sym_func_entry_offset: 0x" << kallsyms_sym_func_entry_offset << std::endl;
 	m_kallsyms_sym_func_entry_offset = kallsyms_sym_func_entry_offset;
-	
+	m_kallsyms_symbols_cache.clear();
 	m_inited = true;
 	return true;
 }
@@ -375,7 +375,6 @@ uint64_t KallsymsLookupName_4_6_0::kallsyms_lookup_name(const char* name) {
 }
 
 std::unordered_map<std::string, uint64_t> KallsymsLookupName_4_6_0::kallsyms_on_each_symbol() {
-	if (!m_inited) { return {}; }
 	if (!m_kallsyms_symbols_cache.size()) {
 		for (auto i = 0, off = 0; i < m_kallsyms_num; i++) {
 			char namebuf[KSYM_NAME_LEN] = { 0 };
