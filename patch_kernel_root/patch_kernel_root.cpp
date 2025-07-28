@@ -52,6 +52,9 @@ void huawei_bypass(const std::vector<char>& file_buf, KernelSymbolOffset &sym, s
 	if (sym.hkip_check_gid_root) {
 		patch_ret_0_cmd(file_buf, sym.hkip_check_gid_root, vec_patch_bytes_data);
 	}
+	if (sym.hkip_check_xid_root) {
+		patch_ret_0_cmd(file_buf, sym.hkip_check_xid_root, vec_patch_bytes_data);
+	}
 }
 
 void no_use_patch(const std::vector<char>& file_buf, KernelSymbolOffset &sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
