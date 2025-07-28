@@ -12,6 +12,5 @@ public:
 		std::vector<patch_bytes_data>& vec_out_patch_bytes_data);
 
 private:
-	int get_need_read_cap_cnt();
 	size_t m_freeze_task = 0;
 };
