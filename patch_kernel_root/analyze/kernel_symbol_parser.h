@@ -18,6 +18,7 @@ public:
 	uint64_t kallsyms_lookup_name(const char* name);
 	std::unordered_map<std::string, uint64_t> kallsyms_lookup_names_like(const char* name);
 private:
+	uint64_t check_convert_jump_cmd(uint64_t symbol_offset);
 	const std::vector<char>& m_file_buf;
 	KernelVersionParser m_kernel_ver_parser;
 	KallsymsLookupName m_kallsyms_lookup_name;

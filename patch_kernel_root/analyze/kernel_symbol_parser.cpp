@@ -3,6 +3,7 @@
 #include <sstream>
 #include <algorithm>
 #include <unordered_map>
+#include "../3rdparty/aarch64_asm_helper.h"
 
 #ifndef MIN
 #define MIN(x, y)(x < y) ? (x) : (y)
@@ -61,18 +62,20 @@ bool KernelSymbolParser::init_kallsyms_lookup_name() {
 }
 
 uint64_t KernelSymbolParser::kallsyms_lookup_name(const char* name) {
+	uint64_t symbol = 0;
 	if (m_kallsyms_lookup_name_6_6_30.is_inited()) {
-		return m_kallsyms_lookup_name_6_6_30.kallsyms_lookup_name(name);
+		symbol = m_kallsyms_lookup_name_6_6_30.kallsyms_lookup_name(name);
 	} else if (m_kallsyms_lookup_name_6_1_60.is_inited()) {
-		return m_kallsyms_lookup_name_6_1_60.kallsyms_lookup_name(name);
+		symbol = m_kallsyms_lookup_name_6_1_60.kallsyms_lookup_name(name);
 	} else if (m_kallsyms_lookup_name_6_1_42.is_inited()) {
-		return m_kallsyms_lookup_name_6_1_42.kallsyms_lookup_name(name);
+		symbol = m_kallsyms_lookup_name_6_1_42.kallsyms_lookup_name(name);
 	} else if (m_kallsyms_lookup_name_4_6_0.is_inited()) {
-		return m_kallsyms_lookup_name_4_6_0.kallsyms_lookup_name(name);
+		symbol = m_kallsyms_lookup_name_4_6_0.kallsyms_lookup_name(name);
 	} else if (m_kallsyms_lookup_name.is_inited()) {
-		return m_kallsyms_lookup_name.kallsyms_lookup_name(name);
+		symbol = m_kallsyms_lookup_name.kallsyms_lookup_name(name);
 	}
-	return 0;
+	symbol = check_convert_jump_cmd(symbol);
+	return symbol;
 }
 
 std::unordered_map<std::string, uint64_t> KernelSymbolParser::kallsyms_lookup_names_like(const char* name) {
@@ -109,7 +112,17 @@ std::unordered_map<std::string, uint64_t> KernelSymbolParser::kallsyms_lookup_na
         if (skip) {
             continue;
 		}
-        result[sym_name] = addr;
+		uint64_t new_addr = check_convert_jump_cmd(addr);
+        result[sym_name] = new_addr;
     }
     return result;
+}
+
+uint64_t KernelSymbolParser::check_convert_jump_cmd(uint64_t symbol_offset) {
+	uint32_t cmd = *(uint32_t*)&m_file_buf[symbol_offset];
+	if (!symbol_offset || !is_aarch64_asm_b(cmd)) {
+		return symbol_offset;
+	}
+	int32_t jump_offset = extract_aarch64_asm_b_value(cmd);
+	return symbol_offset + jump_offset;
 }
