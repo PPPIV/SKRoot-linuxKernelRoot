@@ -72,6 +72,10 @@ bool SymbolAnalyze::find_symbol_offset() {
 	m_kernel_sym_offset.__ubsan_handle_cfi_check_fail_abort = kallsyms_matching_single("__ubsan_handle_cfi_check_fail_abort");
 	m_kernel_sym_offset.__ubsan_handle_cfi_check_fail = kallsyms_matching_single("__ubsan_handle_cfi_check_fail");
 	m_kernel_sym_offset.report_cfi_failure = kallsyms_matching_single("report_cfi_failure");
+
+	m_kernel_sym_offset.hkip_check_uid_root = kallsyms_matching_single("hkip_check_uid_root");
+	m_kernel_sym_offset.hkip_check_gid_root = kallsyms_matching_single("hkip_check_gid_root");
+
 	return (m_kernel_sym_offset.do_execve || m_kernel_sym_offset.do_execveat || m_kernel_sym_offset.do_execveat_common) 
 		&& m_kernel_sym_offset.avc_denied.offset
 		&& m_kernel_sym_offset.filldir64
@@ -111,6 +115,8 @@ void SymbolAnalyze::printf_symbol_offset() {
 	std::cout << "__ubsan_handle_cfi_check_fail_abort:" << m_kernel_sym_offset.__ubsan_handle_cfi_check_fail_abort << std::endl;
 	std::cout << "__ubsan_handle_cfi_check_fail:" << m_kernel_sym_offset.__ubsan_handle_cfi_check_fail << std::endl;
 	std::cout << "report_cfi_failure:" << m_kernel_sym_offset.report_cfi_failure << std::endl;
+	std::cout << "hkip_check_uid_root:" << m_kernel_sym_offset.hkip_check_uid_root << std::endl;
+	std::cout << "hkip_check_gid_root:" << m_kernel_sym_offset.hkip_check_gid_root << std::endl;
 }
 
 uint64_t SymbolAnalyze::kallsyms_matching_single(const char* name, bool fuzzy) {

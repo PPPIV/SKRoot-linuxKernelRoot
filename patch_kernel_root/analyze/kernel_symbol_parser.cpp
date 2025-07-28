@@ -119,6 +119,9 @@ std::unordered_map<std::string, uint64_t> KernelSymbolParser::kallsyms_lookup_na
 }
 
 uint64_t KernelSymbolParser::check_convert_jump_cmd(uint64_t symbol_offset) {
+	if (symbol_offset > m_file_buf.size() - sizeof(uint32_t)) {
+		return symbol_offset;
+	}
 	uint32_t cmd = *(uint32_t*)&m_file_buf[symbol_offset];
 	if (!symbol_offset || !is_aarch64_asm_b(cmd)) {
 		return symbol_offset;

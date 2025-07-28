@@ -42,6 +42,10 @@ struct KernelSymbolOffset {
 	size_t __ubsan_handle_cfi_check_fail_abort = 0;
 	size_t __ubsan_handle_cfi_check_fail = 0;
 	size_t report_cfi_failure = 0;
+
+	//huawei
+	size_t hkip_check_uid_root = 0;
+	size_t hkip_check_gid_root = 0;
 };
 
 class SymbolAnalyze

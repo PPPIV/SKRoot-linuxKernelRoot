@@ -45,6 +45,15 @@ void cfi_bypass(const std::vector<char>& file_buf, KernelSymbolOffset &sym, std:
 	}
 }
 
+void huawei_bypass(const std::vector<char>& file_buf, KernelSymbolOffset &sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
+	if (sym.hkip_check_uid_root) {
+		patch_ret_0_cmd(file_buf, sym.hkip_check_uid_root, vec_patch_bytes_data);
+	}
+	if (sym.hkip_check_gid_root) {
+		patch_ret_0_cmd(file_buf, sym.hkip_check_gid_root, vec_patch_bytes_data);
+	}
+}
+
 void no_use_patch(const std::vector<char>& file_buf, KernelSymbolOffset &sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
 	if (sym.drm_dev_printk.offset) {
 		PATCH_AND_CONSUME(sym.drm_dev_printk, patch_ret_cmd(file_buf, sym.drm_dev_printk.offset, vec_patch_bytes_data));
@@ -135,6 +144,7 @@ int main(int argc, char* argv[]) {
 
 	std::vector<patch_bytes_data> vec_patch_bytes_data;
 	cfi_bypass(file_buf, sym, vec_patch_bytes_data);
+	huawei_bypass(file_buf, sym, vec_patch_bytes_data);
 	no_use_patch(file_buf, sym, vec_patch_bytes_data);
 
 	KernelVersionParser kernel_ver(file_buf);
