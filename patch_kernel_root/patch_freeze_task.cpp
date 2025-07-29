@@ -30,8 +30,7 @@ size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_re
 	}
 	a->ldr(x11, ptr(x11, task_struct_offset_cred.back()));
 	a->cbz(x11, label_end);
-	a->add(x11, x11, Imm(cred_euid_start_pos));
-	a->ldr(w12, ptr(x11));
+	a->ldr(w12, ptr(x11, cred_euid_start_pos));
 	a->cbnz(w12, label_end);
 	a->mov(w0, wzr);
 	a->ret(x30);
