@@ -2,11 +2,11 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
-class KallsymsLookupName_6_6_30
+class KallsymsLookupName_6_4_0
 {
 public:
-	KallsymsLookupName_6_6_30(const std::vector<char>& file_buf);
-	~KallsymsLookupName_6_6_30();
+	KallsymsLookupName_6_4_0(const std::vector<char>& file_buf);
+	~KallsymsLookupName_6_4_0();
 
 public:
 	bool init();

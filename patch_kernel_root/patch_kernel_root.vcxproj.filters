@@ -57,7 +57,7 @@
     <ClCompile Include="analyze\kallsyms_lookup_name_6_1_60.cpp">
       <Filter>analyze</Filter>
     </ClCompile>
-    <ClCompile Include="analyze\kallsyms_lookup_name_6_6_30.cpp">
+    <ClCompile Include="analyze\kallsyms_lookup_name_6_4_0.cpp">
       <Filter>analyze</Filter>
     </ClCompile>
     <ClCompile Include="analyze\kernel_symbol_parser.cpp">
@@ -281,7 +281,7 @@
     <ClInclude Include="analyze\kallsyms_lookup_name_6_1_60.h">
       <Filter>analyze</Filter>
     </ClInclude>
-    <ClInclude Include="analyze\kallsyms_lookup_name_6_6_30.h">
+    <ClInclude Include="analyze\kallsyms_lookup_name_6_4_0.h">
       <Filter>analyze</Filter>
     </ClInclude>
     <ClInclude Include="analyze\kernel_symbol_parser.h">
