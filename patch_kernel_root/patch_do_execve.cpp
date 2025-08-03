@@ -20,12 +20,10 @@ void PatchDoExecve::init_do_execve_param(const KernelSymbolOffset& sym) {
 	if (m_kernel_ver_parser.is_kernel_version_less("3.19.0")) {
 		m_doexecve_reg_param.do_execve_addr = sym.do_execve_common;
 		m_doexecve_reg_param.do_execve_key_reg = 0;
-	}
-	else  if (m_kernel_ver_parser.is_kernel_version_less("4.18.0")) {
+	} else if (m_kernel_ver_parser.is_kernel_version_less("4.18.0")) {
 		m_doexecve_reg_param.do_execve_addr = sym.do_execveat_common;
 		m_doexecve_reg_param.do_execve_key_reg = 1;
-	}
-	else if (m_kernel_ver_parser.is_kernel_version_less("5.9.0")) {
+	} else if (m_kernel_ver_parser.is_kernel_version_less("5.9.0")) {
 		m_doexecve_reg_param.do_execve_addr = sym.__do_execve_file;
 		m_doexecve_reg_param.do_execve_key_reg = 1;
 	} else {
@@ -68,7 +66,7 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	int cap_cnt = get_need_write_cap_cnt();
 	bool is_thread_info_in_stack = is_thread_info_in_stack_bottom();
 
-	size_t do_execve_entry_hook_jump_back_addr = m_doexecve_reg_param.do_execve_addr + 4;
+	size_t hook_jump_back_addr = m_doexecve_reg_param.do_execve_addr + 4;
 	char empty_root_key_buf[ROOT_KEY_LEN] = { 0 };
 
 	aarch64_asm_info asm_info = init_aarch64_asm();
@@ -76,6 +74,7 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	uint32_t sp_el0_id = SysReg::encode(3, 0, 4, 1, 0);
 	Label label_end = a->newLabel();
 	Label label_cycle_name = a->newLabel();
+	Label label_correct = a->newLabel();
 	a->embed((const uint8_t*)empty_root_key_buf, sizeof(empty_root_key_buf));
 	a->mov(x0, x0);
 	a->mov(x11, Imm(uint64_t(-4095)));
@@ -88,16 +87,15 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	}
 	int32_t key_offset = -a->offset();
 	aarch64_asm_adr_x(a, x12, key_offset);
-	a->mov(x13, Imm(0));
 	a->bind(label_cycle_name);
-	a->ldrb(w14, ptr(x11, x13));
-	a->ldrb(w15, ptr(x12, x13));
+	a->ldrb(w14, ptr(x11).post(1));
+	a->ldrb(w15, ptr(x12).post(1));
+	a->cbz(w14, label_end);
+	a->cbz(w15, label_correct);
 	a->cmp(w14, w15);
 	a->b(CondCode::kNE, label_end);
-
-	a->add(x13, x13, Imm(1));
-	a->cmp(x13, Imm(ROOT_KEY_LEN));
-	a->b(CondCode::kLT, label_cycle_name);
+	a->b(label_cycle_name);
+	a->bind(label_correct);
 	a->mrs(x12, sp_el0_id);
 	a->mov(x14, x12);
 	for (auto x = 0; x < task_struct_offset_cred.size(); x++) {
@@ -133,7 +131,7 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	}
 	a->str(xzr, ptr(x12, task_struct_offset_seccomp.back()));
 	a->bind(label_end);
-	aarch64_asm_b(a, (int32_t)(do_execve_entry_hook_jump_back_addr - (hook_func_start_addr + a->offset())));
+	aarch64_asm_b(a, (int32_t)(hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 
 	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
@@ -160,7 +158,6 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	return shellcode_size;
 }
 
-
 size_t PatchDoExecve::patch_root_key(const std::string& root_key, size_t write_addr, std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
 	if (write_addr == 0) { return 0; }
 	std::cout << "Start writing addr: " << std::hex << write_addr << std::endl << std::endl;
@@ -168,7 +165,9 @@ size_t PatchDoExecve::patch_root_key(const std::string& root_key, size_t write_a
 	if (str_root_key.length() > ROOT_KEY_LEN) {
 		str_root_key = str_root_key.substr(0, ROOT_KEY_LEN);
 	}
+	str_root_key.pop_back();
 	std::string str_show_root_key_mem_byte = bytes2hex((const unsigned char*)str_root_key.c_str(), str_root_key.length());
+	str_show_root_key_mem_byte += "00";
 	vec_out_patch_bytes_data.push_back({ str_show_root_key_mem_byte, write_addr });
 	return str_root_key.length() / 2;
 }

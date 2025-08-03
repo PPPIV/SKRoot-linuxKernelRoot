@@ -16,7 +16,7 @@ size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_re
 
 	int cred_euid_start_pos = get_cred_euid_start_pos();
 
-	size_t freeze_task_entry_hook_jump_back_addr = m_freeze_task + 4;
+	size_t hook_jump_back_addr = m_freeze_task + 4;
 
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
@@ -36,7 +36,7 @@ size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_re
 	a->ret(x30);
 	a->bind(label_end);
 	a->mov(x0, x0);
-	aarch64_asm_b(a, (int32_t)(freeze_task_entry_hook_jump_back_addr - (hook_func_start_addr + a->offset())));
+	aarch64_asm_b(a, (int32_t)(hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 
 	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);

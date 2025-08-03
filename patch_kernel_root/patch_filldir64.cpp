@@ -36,7 +36,7 @@ size_t PatchFilldir64::patch_filldir64_core(const SymbolRegion& hook_func_start_
 	size_t hook_func_start_addr = hook_func_start_region.offset;
 	if (hook_func_start_addr == 0) { return 0; }
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
-	size_t filldir64_entry_hook_jump_back_addr = m_filldir64 + 4;
+	size_t hook_jump_back_addr = m_filldir64 + 4;
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	Label label_end = a->newLabel();
@@ -61,7 +61,7 @@ size_t PatchFilldir64::patch_filldir64_core(const SymbolRegion& hook_func_start_
 	a->ret(x30);
 	a->bind(label_end);
 	a->mov(x0, x0);
-	aarch64_asm_b(a, (int32_t)(filldir64_entry_hook_jump_back_addr - (hook_func_start_addr + a->offset())));
+	aarch64_asm_b(a, (int32_t)(hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
 	if (!sp_bytes) {
