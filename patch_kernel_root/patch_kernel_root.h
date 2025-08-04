@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include <iostream>
 #include <filesystem>
+#include "analyze/base_func.h"
+
 #define ROOT_KEY_LEN 48
 
 #define IF_EXIT(cond) do { if (cond) { system("pause"); exit(0); } } while (0)
@@ -30,4 +32,10 @@ static size_t patch_ret_1_cmd(const std::vector<char>& file_buf, size_t start, s
 static size_t patch_ret_0_cmd(const std::vector<char>& file_buf, size_t start, std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
 	vec_out_patch_bytes_data.push_back({ "E0031F2AC0035FD6", start });
 	return 8;
+}
+
+static size_t patch_data(const std::vector<char>& file_buf, size_t start, void* buf, size_t buf_size, std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
+	std::string str_bytes = bytes2hex((const unsigned char*)buf, buf_size);
+	vec_out_patch_bytes_data.push_back({ str_bytes, start });
+	return buf_size;
 }

@@ -9,6 +9,10 @@
 #include "3rdparty/find_mrs_register.h"
 #pragma comment(lib, "3rdparty/capstone-4.0.2-win64/capstone.lib")
 
+struct PatchKernelResult {
+	size_t root_key_start = 0;
+};
+
 bool check_file_path(const char* file_path) {
 	return std::filesystem::path(file_path).extension() != ".img";
 }
@@ -64,6 +68,51 @@ void no_use_patch(const std::vector<char>& file_buf, KernelSymbolOffset &sym, st
 	if (sym.dev_printk.offset) {
 		PATCH_AND_CONSUME(sym.dev_printk, patch_ret_cmd(file_buf, sym.dev_printk.offset, vec_patch_bytes_data));
 	}
+}
+
+
+PatchKernelResult patch_kernel_handler(const std::vector<char>& file_buf, const std::vector<size_t>& v_cred, const std::vector<size_t>& v_seccomp, KernelSymbolOffset& sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
+	KernelVersionParser kernel_ver(file_buf);
+	PatchDoExecve patchDoExecve(file_buf, sym);
+	PatchAvcDenied patchAvcDenied(file_buf, sym.avc_denied);
+	PatchFilldir64 patchFilldir64(file_buf, sym.filldir64);
+	PatchFreezeTask patchFreezeTask(file_buf, sym.freeze_task);
+
+	PatchKernelResult r = { 0 };
+	if (kernel_ver.is_kernel_version_less("5.5.0")) {
+		SymbolRegion next_hook_start_region = { 0x200, 0x250 };
+		r.root_key_start = next_hook_start_region.offset;
+		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(r.root_key_start, next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
+
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
+
+	} else if (kernel_ver.is_kernel_version_less("6.0.0") && sym.__cfi_check.offset) {
+		SymbolRegion next_hook_start_region = sym.__cfi_check;
+		r.root_key_start = next_hook_start_region.offset;
+		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(r.root_key_start, next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
+
+	} else if (sym.die.offset && sym.arm64_notify_die.offset && sym.kernel_halt.offset && sym.drm_dev_printk.offset && sym.dev_printk.offset) {
+		r.root_key_start = sym.die.offset;
+		PATCH_AND_CONSUME(sym.die, patchDoExecve.patch_do_execve(sym.die, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_filldir64_root_key_guide(r.root_key_start, sym.die, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_jump(sym.die.offset, sym.dev_printk.offset, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.dev_printk, patchFilldir64.patch_filldir64_core(sym.dev_printk, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.kernel_halt, patchAvcDenied.patch_avc_denied_first_guide(sym.kernel_halt, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.kernel_halt, patchAvcDenied.patch_jump(sym.kernel_halt.offset, sym.drm_dev_printk.offset, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.drm_dev_printk, patchAvcDenied.patch_avc_denied_core(sym.drm_dev_printk, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.arm64_notify_die, patchFreezeTask.patch_freeze_task(sym.arm64_notify_die, v_cred, vec_patch_bytes_data));
+	}
+
+	return r;
 }
 
 void write_all_patch(const char* file_path, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
@@ -157,41 +206,8 @@ int main(int argc, char* argv[]) {
 	PatchFreezeTask patchFreezeTask(file_buf, sym.freeze_task);
 
 	size_t first_hook_start = 0;
-	size_t shellcode_size = 0;
-	std::vector<size_t> v_hook_func_start_addr;
-	if (kernel_ver.is_kernel_version_less("5.5.0")) {
-		SymbolRegion next_hook_start_region = { 0x200, 0x250 };
-		first_hook_start = next_hook_start_region.offset;
-		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
-
-		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
-
-	} else if (kernel_ver.is_kernel_version_less("6.0.0") && sym.__cfi_check.offset) {
-		SymbolRegion next_hook_start_region = sym.__cfi_check;
-		first_hook_start = next_hook_start_region.offset;
-		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
-
-	} else if(sym.die.offset && sym.arm64_notify_die.offset && sym.kernel_halt.offset
-		&& sym.drm_dev_printk.offset && sym.dev_printk.offset) {
-		first_hook_start = sym.die.offset;
-		PATCH_AND_CONSUME(sym.die, patchDoExecve.patch_do_execve(sym.die, v_cred, v_seccomp, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_filldir64_root_key_guide(first_hook_start, sym.die, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_jump(sym.die.offset, sym.dev_printk.offset, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.dev_printk, patchFilldir64.patch_filldir64_core(sym.dev_printk, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.kernel_halt, patchAvcDenied.patch_avc_denied_first_guide(sym.kernel_halt, v_cred, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.kernel_halt, patchAvcDenied.patch_jump(sym.kernel_halt.offset, sym.drm_dev_printk.offset, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.drm_dev_printk, patchAvcDenied.patch_avc_denied_core(sym.drm_dev_printk, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.arm64_notify_die, patchFreezeTask.patch_freeze_task(sym.arm64_notify_die, v_cred, vec_patch_bytes_data));
-	} else {
+	PatchKernelResult pr = patch_kernel_handler(file_buf, v_cred, v_seccomp, sym, vec_patch_bytes_data);
+	if (pr.root_key_start == 0) {
 		std::cout << "Failed to find hook start addr" << std::endl;
 		system("pause");
 		return 0;
@@ -208,7 +224,9 @@ int main(int argc, char* argv[]) {
 		std::cin >> str_root_key;
 		std::cout << std::endl;
 	}
-	patchDoExecve.patch_root_key(str_root_key, first_hook_start, vec_patch_bytes_data);
+	std::string write_kernel_key = str_root_key;
+	write_kernel_key.pop_back();
+	patch_data(file_buf, pr.root_key_start, (void*)write_kernel_key.c_str(), write_kernel_key.length() + 1, vec_patch_bytes_data);
 
 	std::cout << "#获取ROOT权限的密匙：" << str_root_key.c_str() << std::endl << std::endl;
 
