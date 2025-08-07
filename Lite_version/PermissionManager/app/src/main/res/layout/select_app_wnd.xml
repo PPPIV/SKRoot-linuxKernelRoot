@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView  xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    >
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center">
+
+        <LinearLayout
+            android:id="@+id/center_layout"
+            android:layout_width="300dp"
+            android:layout_height="600dp"
+            android:background="@drawable/shape_wnd_grey_corner"
+            android:elevation="5dp"
+            android:layout_centerInParent="true"
+            android:orientation="vertical"
+            >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_marginLeft="15dp"
+                android:text="选择应用"
+                style="@style/MediumText"
+                />
+
+            <!--分割线条-->
+            <View
+                android:id="@+id/setting_line"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="2dp"
+                android:background="@color/colorGreyWhiteEx"/>
+
+
+            <!-- 搜索框和清除按钮的容器 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <!-- 编辑框 -->
+                <EditText
+                    android:id="@+id/search_edit"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginLeft="5dp"
+                    android:textColor="@color/white"
+                    android:textColorHint="@color/white"
+                    android:hint="筛选..."/>
+
+                <!-- 清除按钮 -->
+                <TextView
+                    android:id="@+id/clear_search_btn"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@color/colorWndGrey"
+                    android:textColor="@color/white"
+                    android:visibility="gone"
+                    android:paddingLeft="15dp"
+                    android:paddingTop="10dp"
+                    android:text="X"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+
+                <CheckBox
+                    android:id="@+id/show_system_app_ckbox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="系统应用"
+                    android:textColor="@color/white" />
+
+                <CheckBox
+                    android:id="@+id/show_thirty_app_ckbox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="第三方应用"
+                    android:checked="true"
+                    android:textColor="@color/white" />
+
+                <CheckBox
+                    android:id="@+id/show_running_app_ckbox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="正在运行"
+                    android:checked="true"
+                    android:textColor="@color/white" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/select_app_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="5dp"
+                android:scrollbars="vertical"
+                android:dividerHeight="1dp"
+                android:background="@color/colorAlpha"
+
+                app:fastScrollEnabled="true"
+                app:fastScrollHorizontalThumbDrawable="@drawable/thumb_drawable"
+                app:fastScrollHorizontalTrackDrawable="@drawable/line_drawable"
+                app:fastScrollVerticalThumbDrawable="@drawable/thumb_drawable"
+                app:fastScrollVerticalTrackDrawable="@drawable/line_drawable"
+
+                />
+
+        </LinearLayout>
+    </RelativeLayout>
+
+
+</ScrollView >
+

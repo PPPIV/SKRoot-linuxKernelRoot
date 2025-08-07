@@ -1,0 +1,10 @@
+#pragma once
+#include "rootkit_command.h"
+#include "rootkit_exec_process.h"
+#include "rootkit_err_def.h"
+#include "rootkit_fork_helper.h"
+#include "rootkit_process64_inject.h"
+#include "rootkit_process_cmdline.h"
+#include "rootkit_su_install_helper.h"
+#include "rootkit_parasite_app.h"
+#include "rootkit_simple_encryptor.h"
