@@ -1,11 +1,11 @@
 目前SKRoot Pro已开发完成。待发布。
 
 支持的特质：
-一、支持Linux kernel module功能（SKRoot内核模块）
-二、支持热修改Hook内核，且无性能损耗（不使用kprobe）
+一、支持动态的Linux内核模块功能（SKRoot内核模块）
+二、支持热修改Hook内核，最高支持10万个Hook位置，且无性能损耗（不使用kprobe）
 三、包含隐藏Bootloader模块
 四、包含Linux内存读写模块
-五、更强、更隐蔽的自定义授权root功能
+五、新增可管理授权root程序功能
 
 环境特质：
 1.不需要Linux内核源码
