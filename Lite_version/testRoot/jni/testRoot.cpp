@@ -3,7 +3,7 @@
 char ROOT_KEY[50] = {0};
 
 namespace {
-	constexpr const char* k_su_base_path = "/data/system";
+	constexpr const char* k_su_base_path = "/data";
 	constexpr const char* recommend_files[] = {"libc++_shared.so"};
 }
 void test_root() {

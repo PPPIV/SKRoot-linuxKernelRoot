@@ -40,18 +40,16 @@ static aarch64_asm_info init_aarch64_asm() {
 	return { std::move(code), std::move(a), std::move(logger), std::move(err) };
 }
 
-static std::pair<std::shared_ptr<char>, size_t> aarch64_asm_to_bytes(const aarch64_asm_info& asm_info) {
+static std::vector<uint8_t> aarch64_asm_to_bytes(const aarch64_asm_info& asm_info) {
 	if (asm_info.err->isError()) {
-		return {nullptr, 0};
+		return {};
 	}
 	asm_info.codeHolder->flatten();
 	asmjit::Section* sec = asm_info.codeHolder->sectionById(0);
 	const asmjit::CodeBuffer& buf = sec->buffer();
 	const uint8_t* data = buf.data();
 	size_t data_size = buf.size();
-	std::shared_ptr<char> data_container(new (std::nothrow) char[data_size], std::default_delete<char[]>());
-	memcpy(data_container.get(), data, data_size);
-	return { data_container, data_size };
+	return std::vector<uint8_t>(data, data + data_size);
 }
 
 static bool aarch64_asm_b(std::unique_ptr<asmjit::a64::Assembler>& a, int32_t b_value) {

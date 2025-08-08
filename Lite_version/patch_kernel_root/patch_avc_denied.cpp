@@ -39,11 +39,11 @@ size_t PatchAvcDenied::patch_avc_denied_first_guide(const SymbolRegion& hook_fun
 
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 
-	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
-	if (!sp_bytes) {
+	std::vector<uint8_t> bytes = aarch64_asm_to_bytes(asm_info);
+	if (bytes.size() == 0) {
 		return 0;
 	}
-	std::string str_bytes = bytes2hex((const unsigned char*)sp_bytes.get(), data_size);
+	std::string str_bytes = bytes2hex((const unsigned char*)bytes.data(), bytes.size());
 	size_t shellcode_size = str_bytes.length() / 2;
 	if (shellcode_size > hook_func_start_region.size) {
 		std::cout << "[发生错误] patch_avc_denied failed: not enough kernel space." << std::endl;
@@ -92,11 +92,11 @@ size_t PatchAvcDenied::patch_avc_denied_core(const SymbolRegion& hook_func_start
 	a->ret(x30);
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 
-	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
-	if (!sp_bytes) {
+	std::vector<uint8_t> bytes = aarch64_asm_to_bytes(asm_info);
+	if (bytes.size() == 0) {
 		return 0;
 	}
-	std::string str_bytes = bytes2hex((const unsigned char*)sp_bytes.get(), data_size);
+	std::string str_bytes = bytes2hex((const unsigned char*)bytes.data(), bytes.size());
 	size_t shellcode_size = str_bytes.length() / 2;
 	if (shellcode_size > hook_func_start_region.size) {
 		std::cout << "[发生错误] patch_avc_denied failed: not enough kernel space." << std::endl;

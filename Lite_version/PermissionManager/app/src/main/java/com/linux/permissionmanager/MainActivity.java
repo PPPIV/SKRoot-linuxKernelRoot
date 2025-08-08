@@ -58,7 +58,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private String rootKey = "";
-    private String suBasePath = "/data/system";
+    private String suBasePath = "/data";
     private String lastInputCmd = "id";
     private String lastInputRootExecPath = "";
     private SharedPreferences m_shareSave;

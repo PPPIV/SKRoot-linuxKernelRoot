@@ -14,31 +14,31 @@ PatchDoExecve::~PatchDoExecve() {}
 void PatchDoExecve::init_do_execve_param(const KernelSymbolOffset& sym) {
 	if (m_kernel_ver_parser.is_kernel_version_less("3.14.0")) {
 		m_doexecve_reg_param.do_execve_addr = sym.do_execve_common;
-		m_doexecve_reg_param.do_execve_key_reg = 0;
-		m_doexecve_reg_param.is_single_filename = true;
+		m_doexecve_reg_param.do_execve_filename_reg = 0;
+		m_doexecve_reg_param.is_single_char_ptr = true;
 	}
 	if (m_kernel_ver_parser.is_kernel_version_less("3.19.0")) {
 		m_doexecve_reg_param.do_execve_addr = sym.do_execve_common;
-		m_doexecve_reg_param.do_execve_key_reg = 0;
+		m_doexecve_reg_param.do_execve_filename_reg = 0;
 	} else if (m_kernel_ver_parser.is_kernel_version_less("4.18.0")) {
 		m_doexecve_reg_param.do_execve_addr = sym.do_execveat_common;
-		m_doexecve_reg_param.do_execve_key_reg = 1;
+		m_doexecve_reg_param.do_execve_filename_reg = 1;
 	} else if (m_kernel_ver_parser.is_kernel_version_less("5.9.0")) {
 		m_doexecve_reg_param.do_execve_addr = sym.__do_execve_file;
-		m_doexecve_reg_param.do_execve_key_reg = 1;
+		m_doexecve_reg_param.do_execve_filename_reg = 1;
 	} else {
 		// default linux kernel useage
 		m_doexecve_reg_param.do_execve_addr = sym.do_execveat_common;
-		m_doexecve_reg_param.do_execve_key_reg = 1;
+		m_doexecve_reg_param.do_execve_filename_reg = 1;
 	}
 
 	if (m_doexecve_reg_param.do_execve_addr == 0) {
 		m_doexecve_reg_param.do_execve_addr = sym.do_execve;
-		m_doexecve_reg_param.do_execve_key_reg = 0;
+		m_doexecve_reg_param.do_execve_filename_reg = 0;
 	}
 	if (m_doexecve_reg_param.do_execve_addr == 0) {
 		m_doexecve_reg_param.do_execve_addr = sym.do_execveat;
-		m_doexecve_reg_param.do_execve_key_reg = 1;
+		m_doexecve_reg_param.do_execve_filename_reg = 1;
 	}
 }
 
@@ -78,12 +78,12 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	a->embed((const uint8_t*)empty_root_key_buf, sizeof(empty_root_key_buf));
 	a->mov(x0, x0);
 	a->mov(x11, Imm(uint64_t(-4095)));
-	a->cmp(a64::x(m_doexecve_reg_param.do_execve_key_reg), x11);
+	a->cmp(a64::x(m_doexecve_reg_param.do_execve_filename_reg), x11);
 	a->b(CondCode::kCS, label_end);
-	if (m_doexecve_reg_param.is_single_filename) {
-		a->mov(x11, a64::x(m_doexecve_reg_param.do_execve_key_reg));
+	if (m_doexecve_reg_param.is_single_char_ptr) {
+		a->mov(x11, a64::x(m_doexecve_reg_param.do_execve_filename_reg));
 	} else {
-		a->ldr(x11, ptr(a64::x(m_doexecve_reg_param.do_execve_key_reg)));
+		a->ldr(x11, ptr(a64::x(m_doexecve_reg_param.do_execve_filename_reg)));
 	}
 	int32_t key_offset = -a->offset();
 	aarch64_asm_adr_x(a, x12, key_offset);
@@ -134,11 +134,11 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	aarch64_asm_b(a, (int32_t)(hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 
-	auto [sp_bytes, data_size] = aarch64_asm_to_bytes(asm_info);
-	if (!sp_bytes) {
+	std::vector<uint8_t> bytes = aarch64_asm_to_bytes(asm_info);
+	if (bytes.size() == 0) {
 		return 0;
 	}
-	std::string str_bytes = bytes2hex((const unsigned char*)sp_bytes.get(), data_size);
+	std::string str_bytes = bytes2hex((const unsigned char*)bytes.data(), bytes.size());
 	size_t shellcode_size = str_bytes.length() / 2;
 
 	char hookOrigCmd[4] = { 0 };
