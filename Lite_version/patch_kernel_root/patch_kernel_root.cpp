@@ -17,12 +17,18 @@ bool check_file_path(const char* file_path) {
 	return std::filesystem::path(file_path).extension() != ".img";
 }
 
-bool parser_cred_offset(const std::vector<char> &file_buf, size_t start, std::string& mode_name, std::vector<size_t>& v_cred) {
-	 return find_current_task_next_register_offset(file_buf, start, mode_name, v_cred);
+bool parser_cred_offset(const std::vector<char>& file_buf, size_t start, std::string& mode_name, std::vector<size_t>& v_cred) {
+	if (!find_current_task_next_register_offset(file_buf, start, mode_name, v_cred)) {
+		return false;
+	}
+	return v_cred.size() && v_cred.back() > 0x200;
 }
 
-bool parser_seccomp_offset(const std::vector<char> &file_buf, size_t start, std::string& mode_name, std::vector<size_t>& v_seccomp) {
-	 return find_current_task_next_register_offset(file_buf, start, mode_name, v_seccomp);
+bool parser_seccomp_offset(const std::vector<char>& file_buf, size_t start, std::string& mode_name, std::vector<size_t>& v_seccomp) {
+	if (!find_current_task_next_register_offset(file_buf, start, mode_name, v_seccomp)) {
+		return false;
+	}
+	return v_seccomp.size() && v_seccomp.back() > 0x200;
 }
 
 void cfi_bypass(const std::vector<char>& file_buf, KernelSymbolOffset &sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
