@@ -1,9 +1,6 @@
-package com.linux.permissionmanager.Model;
+package com.linux.permissionmanager.model;
 
 import android.graphics.Color;
-import android.os.Build;
-
-import androidx.annotation.RequiresApi;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

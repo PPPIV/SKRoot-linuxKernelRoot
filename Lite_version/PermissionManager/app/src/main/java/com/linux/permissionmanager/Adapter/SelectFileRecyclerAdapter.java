@@ -1,4 +1,4 @@
-package com.linux.permissionmanager.Adapter;
+package com.linux.permissionmanager.adapter;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -8,14 +8,13 @@ import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.linux.permissionmanager.Model.SelectFileRecyclerItem;
+import com.linux.permissionmanager.model.SelectFileRecyclerItem;
 import com.linux.permissionmanager.R;
 
 import java.util.ArrayList;

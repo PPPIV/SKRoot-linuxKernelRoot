@@ -1,4 +1,4 @@
-package com.linux.permissionmanager.Model;
+package com.linux.permissionmanager.model;
 
 import android.view.MotionEvent;
 import android.view.View;

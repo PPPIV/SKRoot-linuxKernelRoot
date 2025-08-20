@@ -1,4 +1,4 @@
-package com.linux.permissionmanager.Adapter;
+package com.linux.permissionmanager.adapter;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
@@ -15,7 +15,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.linux.permissionmanager.Model.SelectAppRecyclerItem;
+import com.linux.permissionmanager.model.SelectAppRecyclerItem;
 import com.linux.permissionmanager.R;
 
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package com.linux.permissionmanager.Utils;
+package com.linux.permissionmanager.utils;
 
 import android.app.Activity;
 import android.content.Context;
