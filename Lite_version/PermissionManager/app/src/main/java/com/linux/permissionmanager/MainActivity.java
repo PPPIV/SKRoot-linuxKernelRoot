@@ -58,7 +58,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private String rootKey = "";
-    private String suBasePath = "/data";
     private String lastInputCmd = "id";
     private String lastInputRootExecPath = "";
     private SharedPreferences m_shareSave;
@@ -200,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void onClickSuEnvInstallBtn() {
-        String insRet = installSu(rootKey, suBasePath);
+        String insRet = installSu(rootKey);
         appendConsoleMsg(insRet);
         if(insRet.indexOf("installSu done.") != -1) {
             String suFullPath = getLastInstallSuFullPath();
@@ -213,7 +212,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void onClickSuEnvUninstallBtn() {
-        appendConsoleMsg(uninstallSu(rootKey,suBasePath));
+        appendConsoleMsg(uninstallSu(rootKey));
         copyEditText("");
     }
 
@@ -370,7 +369,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                     @Override
                                     public void handleMessage(@NonNull Message msg) {
                                         SelectFileRecyclerItem fileItem = (SelectFileRecyclerItem) msg.obj;
-                                        String parasiteImplantAppRet = parasiteImplantApp(rootKey, appItem.getPackageName(), fileItem.getFilePath(), suBasePath);
+                                        String parasiteImplantAppRet = parasiteImplantApp(rootKey, appItem.getPackageName(), fileItem.getFilePath());
                                         appendConsoleMsg(parasiteImplantAppRet);
                                         if(parasiteImplantAppRet.indexOf("parasiteImplantApp done.")!= -1) {
                                             DialogUtils.showMsgDlg(MainActivity.this, "提示",
@@ -751,11 +750,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public native String rootExecProcessCmd(String rootKey, String cmd);
 
-    public native String installSu(String rootKey, String basePath);
+    public native String installSu(String rootKey);
 
     public native String getLastInstallSuFullPath();
 
-    public native String uninstallSu(String rootKey, String basePath);
+    public native String uninstallSu(String rootKey);
 
     public native String autoSuEnvInject(String rootKey, String targetProcessCmdline);
 
@@ -763,7 +762,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public native String parasitePrecheckApp(String rootKey, String targetProcessCmdline);
 
-    public native String parasiteImplantApp(String rootKey, String targetProcessCmdline, String targetSoFullPath, String targetSuFolderPath);
+    public native String parasiteImplantApp(String rootKey, String targetProcessCmdline, String targetSoFullPath);
 
     public native String parasiteImplantSuEnv(String rootKey, String targetProcessCmdline, String targetSoFullPath);
 

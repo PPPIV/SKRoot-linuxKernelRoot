@@ -1,20 +1,10 @@
 ﻿#include "su.h"
 #include "su_log.h"
-#include "su_hide_path_utils.h"
-#include "kernel_root_kit/core/rootkit_command.h"
+#include "su_inline.h"
+#include "kernel_root_kit_umbrella.h"
 #include <filesystem>
 
 namespace {
-	std::string get_executable_directory() {
-		char processdir[4096] = { 0 };
-		ssize_t path_len = readlink("/proc/self/exe", processdir, sizeof(processdir));
-		if(path_len > 0) {
-			std::filesystem::path path(processdir);
-			return path.parent_path().string();
-		}
-		return {};
-	}
-
 	/*
 	 * Bionic's atoi runs through strtol().
 	 * Use our own implementation for faster conversion.
@@ -62,12 +52,6 @@ void usage(int status) {
 		"  -mm, -M,\n"
 		"  --mount-master                force run in the global mount namespace\n\n");
 	exit(status);
-}
-
-static inline std::string get_root_key() {
-	std::string myself_path = get_executable_directory();
-	std::string str_root_key = kernel_root::su::parse_root_key_by_su_path(myself_path.c_str());
-	return str_root_key;
 }
 
 int su_client_main(int argc, char* argv[]) {
@@ -141,7 +125,7 @@ int su_client_main(int argc, char* argv[]) {
 		optind++;
 	}
 
-	std::string root_key = get_root_key();
+	std::string root_key = const_cast<char*>(static_inline_su_rootkey);
 	SU_PRINTF("root_key:%s\n", root_key.c_str());
 
 	kernel_root::get_root(root_key.c_str());

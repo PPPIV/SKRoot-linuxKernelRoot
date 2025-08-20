@@ -1,6 +1,6 @@
 ﻿#include "patch_base.h"
 #include "analyze/base_func.h"
-#include "3rdparty/aarch64_asm_helper.h"
+
 using namespace asmjit;
 using namespace asmjit::a64;
 using namespace asmjit::a64::Predicate;
@@ -29,7 +29,7 @@ int PatchBase::get_cred_uid_region_len() {
 	return uid + gid + suid + sgid + euid + egid + fsuid + fsgid;
 }
 
-int PatchBase::get_cred_euid_start_pos() {
+int PatchBase::get_cred_euid_offset() {
 	int start_pos = get_cred_atomic_usage_len();
 	const int uid = 4;
 	const int gid = 4;
@@ -80,4 +80,21 @@ size_t PatchBase::patch_jump(size_t patch_addr, size_t jump_addr, std::vector<pa
 	std::string str_bytes = bytes2hex((const unsigned char*)bytes.data(), bytes.size());
 	vec_out_patch_bytes_data.push_back({ str_bytes, patch_addr });
 	return bytes.size();
+}
+
+bool PatchBase::is_CONFIG_THREAD_INFO_IN_TASK() {
+	return !m_kernel_ver_parser.is_kernel_version_less("4.4.207");
+}
+
+void PatchBase::get_current_task_struct(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit::a64::GpX x) {
+	struct thread_info {
+		uint64_t flags;		/* low level flags */
+		uint64_t addr_limit;	/* address limit */
+	};
+	uint32_t sp_el0_id = SysReg::encode(3, 0, 4, 1, 0);
+	a->mrs(x, sp_el0_id);
+	if (!is_CONFIG_THREAD_INFO_IN_TASK()) {
+		a->and_(x, x, Imm((uint64_t)~(0x4000 - 1)));
+		a->ldr(x, ptr(x, sizeof(thread_info)));
+	}
 }

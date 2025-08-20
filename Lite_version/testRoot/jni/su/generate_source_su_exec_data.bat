@@ -2,7 +2,7 @@
 cd /d "%~dp0"
 
 set "work_path=%~dp0"
-set "kernel_root_path=%~dp0../kernel_root_kit/core"
+set "kernel_root_path=%~dp0../kernel_root_kit/cpp/private"
 
 echo %work_path%
 echo %kernel_root_path%

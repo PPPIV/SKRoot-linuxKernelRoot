@@ -15,18 +15,17 @@
 #include "lib_root_server.h"
 #include "lib_root_server_inline.h"
 #include "index_html_gz_data.h"
-#include "testRoot.h"
-#include "kernel_root_kit/kernel_root_kit_umbrella.h"
+#include "kernel_root_kit_umbrella.h"
 #include "utils/stringUtils.h"
 #include "utils/jsonUtils.h"
 #include "utils/randomData.h"
 
+#define MAX_HEARTBEAT_TIME_SEC 20
 namespace {
 constexpr const char* recommend_files[] = {"libc++_shared.so"};
 
 }
-std::atomic<bool> g_firstRequest{false};
-std::atomic<bool> g_heartbeat{false};
+std::atomic<bool> g_heartbeat{true};
 
 class InjectSuInfo{
 public:
@@ -138,7 +137,7 @@ std::string handle_heartbeat(const std::string & userName) {
 std::string handle_test_root() {
     std::stringstream sstr;
     sstr << "get_root:" <<  kernel_root::get_root(ROOT_KEY.c_str()) << std::endl << std::endl;
-    sstr << get_capability_info();
+    sstr << kernel_root::get_capability_info();
     return convert_2_json(sstr.str());
 }
 
@@ -161,7 +160,7 @@ std::string handle_root_exec_process(const std::string & path) {
 
 std::string handle_install_su() {
     ssize_t err = ERR_NONE;
-    std::string su_hide_full_path = kernel_root::install_su(ROOT_KEY.c_str(), SU_BASE_PATH.c_str(), err);
+    std::string su_hide_full_path = kernel_root::install_su(ROOT_KEY.c_str(), err);
     std::stringstream sstr;
     sstr << "install su err:" << err<<", su_hide_full_path:" << su_hide_full_path << std::endl;
     
@@ -176,7 +175,7 @@ std::string handle_install_su() {
 
 std::string handle_uninstall_su() {
    
-    ssize_t err = kernel_root::safe_uninstall_su(ROOT_KEY.c_str(), SU_BASE_PATH.c_str());
+    ssize_t err = kernel_root::uninstall_su(ROOT_KEY.c_str());
     std::stringstream sstr;
     sstr << "uninstallSu err:" << err << std::endl;
     if (err != ERR_NONE) {
@@ -241,11 +240,10 @@ std::string handle_get_app_list(bool isShowSystemApp, bool isShowThirtyApp, bool
     return convert_2_json_v(packageNames);
 }
 
-void inject_su_thread(const std::string& su_path) {
+void inject_su_thread() {
     writeToLog("inject_su_thread enter");
 
-	std::filesystem::path path(su_path);
-	std::string su_folder = path.parent_path().string();
+	std::string su_folder = kernel_root::get_su_hide_folder_path(ROOT_KEY.c_str());
     g_inject_su_info.append_console_msg("su_folder ret val:" + su_folder);
 
     // 1.杀光所有历史进程
@@ -293,7 +291,7 @@ std::string handle_inject_su_in_temp_app(const std::string & app_name) {
     writeToLog("start inject su thread, app name: " + app_name);
     g_inject_su_info.working = true;
     g_inject_su_info.success = false;
-    std::thread td(inject_su_thread, SU_BASE_PATH);
+    std::thread td(inject_su_thread);
     td.detach();
     return convert_2_json("ok", param);
 }
@@ -375,14 +373,15 @@ std::string handle_inject_su_in_forever_app(const std::string & app_name, const 
     std::map<std::string, std::string> param;
     param["errcode"] = "0";
     
-	std::string su_hide_path = kernel_root::su::find_su_hide_folder_path(ROOT_KEY.c_str(), SU_BASE_PATH.c_str());
+	ssize_t err;
+	std::string su_hide_path = kernel_root::install_su(ROOT_KEY.c_str(), err);
 	if (su_hide_path.empty()) {
         param["errcode"] = "-1";
         return convert_2_json_m("su_hide_path is empty");
     }
 
     std::set<pid_t> pid_arr;
-	ssize_t err = kernel_root::find_all_cmdline_process(ROOT_KEY.c_str(), app_name.c_str(), pid_arr);
+	err = kernel_root::find_all_cmdline_process(ROOT_KEY.c_str(), app_name.c_str(), pid_arr);
 	if (err) {
         param["errcode"] = "-2";
         errmsg << "find_all_cmdline_process err:" << err << std::endl;
@@ -497,12 +496,12 @@ std::string handle_post_action(std::string_view post_data) {
 }
 
 void handle_client(int client_socket) {
-    kernel_root::get_root(ROOT_KEY.c_str());
-    
+    if (client_socket < 0) { return; } 
+
     // Set a timeout for the receive operation
     struct timeval timeout;
-    timeout.tv_sec = 0;  // 0 seconds
-    timeout.tv_usec = 500 * 1000;  // 500 milliseconds
+    timeout.tv_sec = 3;  // 0 seconds
+    timeout.tv_usec = 0;
     if (setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
         perror("setsockopt");
         close(client_socket);
@@ -517,10 +516,8 @@ void handle_client(int client_socket) {
         std::string response_body;
         bool append_gzip = false;
         if (request.length() > 3 && request.substr(0, 3) == "GET") {
-            g_firstRequest = true;
             std::tie(response_body, append_gzip) = handle_index();
         } else if (request.length() > 4 && request.substr(0, 4) == "POST") {
-			g_firstRequest = true;
             response_body = handle_post_action(request);
         }
 		
@@ -541,32 +538,10 @@ void handle_client(int client_socket) {
     close(client_socket);
 }
 
-void checkTimeoutActive() {
-    //首次请求必须在5秒内发起
-    for(int i = 0; i < 5; i++) {
-        sleep(1);
-        if(g_firstRequest) {
-            break;
-        }
-    }
-    if(!g_firstRequest) {
-        _exit(0); //安全结束服务器
-    }
-    // 10秒内无心跳自动退出
-    for(int i = 0; i < 10; i++) {
-        sleep(1);
-        if(g_heartbeat) {
-            g_heartbeat = false;
-            i = 0;
-        }
-    }
-    _exit(0);
-}
-
 int server_main() {
     writeToLog("server_main enter");
 	int server_socket, client_socket;
-	struct sockaddr_in server_addr, client_addr;
+	struct sockaddr_in server_addr;
 	socklen_t client_len;
 	server_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_socket == -1) {
@@ -588,17 +563,24 @@ int server_main() {
 	}
 	listen(server_socket, 5);
 
-    std::thread heartbeatThread(checkTimeoutActive);
-    heartbeatThread.detach();
-
     writeToLog("Server listening");
-	while ((client_socket = accept(
-				server_socket, (struct sockaddr*)&client_addr, &client_len))) {
-		std::thread client_thread(handle_client, client_socket);
-    	client_thread.detach();
-	}
+    for (;;) {
+        client_socket = accept(server_socket, nullptr, nullptr);
+        if (client_socket < 0) {
+            if (errno == EINTR) continue;
+            perror("accept");
+            continue;
+        }
+        std::thread client_thread(handle_client, client_socket);
+        client_thread.detach();
+    }
+    writeToLog("Server close");
 	close(server_socket);
 	return 0;
+}
+
+void run_server_thread() {
+    server_main();
 }
 
 void open_server_url(int port) {
@@ -610,31 +592,25 @@ void open_server_url(int port) {
     }
 }
 
-void guide_server_main() {
-    writeToLog("guide_server_main server enter");
-	server_main();
+void open_url_thread() {
+    sleep(1);
+    open_server_url(PORT);
 }
 
-void timeout_exit_process(int timeout_ms) {
-    std::thread([timeout_ms]() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(timeout_ms));
-        _exit(0);
-    }).detach();
-}
-
-bool try_connect(uint16_t port) {
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-        writeToLog("try_connect_and_open: socket failed.");
-        return false;
+void ready_server_main() {
+    writeToLog("ready_server_main server enter");
+    if (kernel_root::get_root(ROOT_KEY.c_str()) != ERR_NONE) {
+        writeToLog("ready_server_main root error");
+		return;
+	}
+    std::thread td1(run_server_thread);
+    td1.detach();
+    std::thread td2(open_url_thread);
+    td2.detach();
+    while (g_heartbeat) {
+        g_heartbeat = false;
+        usleep(1000 * 1000 * MAX_HEARTBEAT_TIME_SEC);
     }
-    sockaddr_in addr{};
-    addr.sin_family      = AF_INET;
-    addr.sin_port        = htons(port);
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    int c = connect(sock, (struct sockaddr*)&addr, sizeof(addr));
-    close(sock);
-    return c == 0;
 }
 
 static inline void printf_random_data() {
@@ -653,43 +629,31 @@ extern "C" void __attribute__((constructor)) root_server_entry() {
 
     srand(time(NULL));
     PORT = rand() % 40001 + 20000;
-
     ROOT_KEY = const_cast<char*>(static_inline_root_key);
-    SU_BASE_PATH = const_cast<char*>(static_inline_su_base);
-    if (kernel_root::get_root(ROOT_KEY.c_str()) != ERR_NONE) {
-		return;
-	}
-
     {
         pid_t pid = fork();
         if (pid == 0) {
-            sleep(1);
-            timeout_exit_process(2000);
-            if(try_connect(PORT)) {
-                open_server_url(PORT);
-            }
+            writeToLog("root server process running");
+            ready_server_main();
             _exit(0);
             printf_random_data();
-        }   
+        }
     }
-
-    {
-        pid_t pid = fork();
-        if (pid == 0) {
-            writeToLog("listening");
-            guide_server_main();
-            _exit(0);
-            printf_random_data();
-        }    
-    }
-
 }
 
 // int main(int argc, char* argv[]) {
 //     std::string key = "u24kKoPVSAG1tnwlcs1PJ1qp6HtVymj60CoTgsjmMd1UALve";
 //     memset((void*)&static_inline_root_key, 0, sizeof(static_inline_root_key));
 //     memcpy((void*)&static_inline_root_key, (void*)key.c_str(), key.length() + 1);
-//     open_server_url();
-//     server_main();
+//     PORT = 3168;
+
+//     std::thread td1(run_server_thread);
+//     td1.detach();
+//     std::thread td2(open_url_thread);
+//     td2.detach();
+//     while (g_heartbeat) {
+//         g_heartbeat = false;
+//         usleep(1000 * 1000 * (MAX_HEARTBEAT_TIME_SEC / 2));
+//     }
 //     return 0;
 // }

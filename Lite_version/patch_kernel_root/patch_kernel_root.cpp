@@ -17,18 +17,12 @@ bool check_file_path(const char* file_path) {
 	return std::filesystem::path(file_path).extension() != ".img";
 }
 
-bool parser_cred_offset(const std::vector<char>& file_buf, size_t start, std::string& mode_name, std::vector<size_t>& v_cred) {
-	if (!find_current_task_next_register_offset(file_buf, start, mode_name, v_cred)) {
-		return false;
-	}
-	return v_cred.size() && v_cred.back() > 0x200;
+bool parser_cred_offset(const std::vector<char>& file_buf, size_t start, std::string& mode_name, size_t& cred_offset) {
+	return find_current_task_next_register_offset(file_buf, start, mode_name, cred_offset);
 }
 
-bool parser_seccomp_offset(const std::vector<char>& file_buf, size_t start, std::string& mode_name, std::vector<size_t>& v_seccomp) {
-	if (!find_current_task_next_register_offset(file_buf, start, mode_name, v_seccomp)) {
-		return false;
-	}
-	return v_seccomp.size() && v_seccomp.back() > 0x200;
+bool parser_seccomp_offset(const std::vector<char>& file_buf, size_t start, std::string& mode_name, size_t& seccomp_offset) {
+	return find_current_task_next_register_offset(file_buf, start, mode_name, seccomp_offset);
 }
 
 void cfi_bypass(const std::vector<char>& file_buf, KernelSymbolOffset &sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
@@ -77,7 +71,7 @@ void no_use_patch(const std::vector<char>& file_buf, KernelSymbolOffset &sym, st
 }
 
 
-PatchKernelResult patch_kernel_handler(const std::vector<char>& file_buf, const std::vector<size_t>& v_cred, const std::vector<size_t>& v_seccomp, KernelSymbolOffset& sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
+PatchKernelResult patch_kernel_handler(const std::vector<char>& file_buf, size_t cred_offset, size_t seccomp_offset, KernelSymbolOffset& sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
 	KernelVersionParser kernel_ver(file_buf);
 	PatchDoExecve patchDoExecve(file_buf, sym);
 	PatchAvcDenied patchAvcDenied(file_buf, sym.avc_denied);
@@ -88,34 +82,34 @@ PatchKernelResult patch_kernel_handler(const std::vector<char>& file_buf, const 
 	if (kernel_ver.is_kernel_version_less("5.5.0")) {
 		SymbolRegion next_hook_start_region = { 0x200, 0x250 };
 		r.root_key_start = next_hook_start_region.offset;
-		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, cred_offset, seccomp_offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(r.root_key_start, next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
 
-		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, cred_offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, cred_offset, vec_patch_bytes_data));
 
 	} else if (kernel_ver.is_kernel_version_less("6.0.0") && sym.__cfi_check.offset) {
 		SymbolRegion next_hook_start_region = sym.__cfi_check;
 		r.root_key_start = next_hook_start_region.offset;
-		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, cred_offset, seccomp_offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(r.root_key_start, next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, cred_offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, cred_offset, vec_patch_bytes_data));
 
 	} else if (sym.die.offset && sym.arm64_notify_die.offset && sym.kernel_halt.offset && sym.drm_dev_printk.offset && sym.dev_printk.offset) {
 		r.root_key_start = sym.die.offset;
-		PATCH_AND_CONSUME(sym.die, patchDoExecve.patch_do_execve(sym.die, v_cred, v_seccomp, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.die, patchDoExecve.patch_do_execve(sym.die, cred_offset, seccomp_offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_filldir64_root_key_guide(r.root_key_start, sym.die, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_jump(sym.die.offset, sym.dev_printk.offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.dev_printk, patchFilldir64.patch_filldir64_core(sym.dev_printk, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.kernel_halt, patchAvcDenied.patch_avc_denied_first_guide(sym.kernel_halt, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.kernel_halt, patchAvcDenied.patch_avc_denied_first_guide(sym.kernel_halt, cred_offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.kernel_halt, patchAvcDenied.patch_jump(sym.kernel_halt.offset, sym.drm_dev_printk.offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.drm_dev_printk, patchAvcDenied.patch_avc_denied_core(sym.drm_dev_printk, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.arm64_notify_die, patchFreezeTask.patch_freeze_task(sym.arm64_notify_die, v_cred, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.arm64_notify_die, patchFreezeTask.patch_freeze_task(sym.arm64_notify_die, cred_offset, vec_patch_bytes_data));
 	}
 
 	return r;
@@ -176,29 +170,23 @@ int main(int argc, char* argv[]) {
 	KernelSymbolOffset sym = symbol_analyze.get_symbol_offset();
 
 	std::string t_mode_name;
-	std::vector<size_t> v_cred;
-	std::vector<size_t> v_seccomp;
-	if (!parser_cred_offset(file_buf, sym.revert_creds, t_mode_name, v_cred)) {
+	size_t cred_offset  = 0;
+	size_t seccomp_offset = 0;
+	if (!parser_cred_offset(file_buf, sym.revert_creds, t_mode_name, cred_offset)) {
 		std::cout << "Failed to parse cred offsert" << std::endl;
 		system("pause");
 		return 0;
 	}
 	std::cout << "Parse cred offsert mode name: " << t_mode_name  << std::endl;
 
-	if (!parser_seccomp_offset(file_buf, sym.prctl_get_seccomp, t_mode_name, v_seccomp)) {
+	if (!parser_seccomp_offset(file_buf, sym.prctl_get_seccomp, t_mode_name, seccomp_offset)) {
 		std::cout << "Failed to parse seccomp offsert" << std::endl;
 		system("pause");
 		return 0;
 	}
 	std::cout << "Parse seccomp offsert mode name: " << t_mode_name << std::endl;
-
-	for (auto x = 0; x < v_cred.size(); x++) {
-		std::cout << "cred_offset[" << x <<"]:" << v_cred[x] << std::endl;
-	}
-	
-	for (auto x = 0; x < v_seccomp.size(); x++) {
-		std::cout << "seccomp_offset[" << x <<"]:" << v_seccomp[x] << std::endl;
-	}
+	std::cout << "cred_offset:" << cred_offset << std::endl;
+	std::cout << "seccomp_offset:" << seccomp_offset << std::endl;
 
 	std::vector<patch_bytes_data> vec_patch_bytes_data;
 	cfi_bypass(file_buf, sym, vec_patch_bytes_data);
@@ -212,7 +200,7 @@ int main(int argc, char* argv[]) {
 	PatchFreezeTask patchFreezeTask(file_buf, sym.freeze_task);
 
 	size_t first_hook_start = 0;
-	PatchKernelResult pr = patch_kernel_handler(file_buf, v_cred, v_seccomp, sym, vec_patch_bytes_data);
+	PatchKernelResult pr = patch_kernel_handler(file_buf, cred_offset, seccomp_offset, sym, vec_patch_bytes_data);
 	if (pr.root_key_start == 0) {
 		std::cout << "Failed to find hook start addr" << std::endl;
 		system("pause");

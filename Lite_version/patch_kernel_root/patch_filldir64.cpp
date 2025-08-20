@@ -28,7 +28,9 @@ size_t PatchFilldir64::patch_filldir64_root_key_guide(size_t root_key_mem_addr, 
 		return 0;
 	}
 	vec_out_patch_bytes_data.push_back({ str_bytes, hook_func_start_addr });
+
 	patch_jump(m_filldir64, hook_func_start_addr, vec_out_patch_bytes_data);
+
 	return shellcode_size;
 }
 
@@ -37,6 +39,7 @@ size_t PatchFilldir64::patch_filldir64_core(const SymbolRegion& hook_func_start_
 	if (hook_func_start_addr == 0) { return 0; }
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
 	size_t hook_jump_back_addr = m_filldir64 + 4;
+
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	Label label_end = a->newLabel();

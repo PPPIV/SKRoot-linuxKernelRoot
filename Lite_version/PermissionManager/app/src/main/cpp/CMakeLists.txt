@@ -9,29 +9,35 @@ cmake_minimum_required(VERSION 3.18.1)
 
 project("permissionmanager")
 
+set(OTHER_SRC
+		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_command.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_exec_process.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_myinfo.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_fork_helper.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_process_cmdline_utils.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_process64_inject.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_ptrace_arm64_utils.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_su_install_helper.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_upx_helper.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_parasite_app.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_parasite_patch_elf.cpp"
+
+		"${CMAKE_CURRENT_SOURCE_DIR}/cJSON.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/native-lib.cpp"
+		)
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
 
 add_library( # Sets the name of the library.
-        permissionmanager
+		permissionmanager
 
-        # Sets the library as a shared library.
-        SHARED
+		# Sets the library as a shared library.
+		SHARED
 
-        # Provides a relative path to your source file(s).
-		../../../../../testRoot/jni/kernel_root_kit/core/rootkit_command.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_exec_process.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_process_cmdline.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_process64_inject.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_ptrace_arm64_utils.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_su_install_helper.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_upx_helper.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_parasite_app.cpp
-        ../../../../../testRoot/jni/kernel_root_kit/core/rootkit_parasite_patch_elf.cpp
-        cJSON.cpp
-        native-lib.cpp)
+		# Provides a relative path to your source file(s).
+		${OTHER_SRC})
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
@@ -54,6 +60,8 @@ target_include_directories(
 		permissionmanager
 		PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/
+		${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit
+		${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/include
 )
 
 target_link_libraries( # Specifies the target library.

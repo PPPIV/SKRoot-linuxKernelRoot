@@ -10,10 +10,10 @@
 
 namespace {
 std::string ROOT_KEY;
-std::string SU_BASE_PATH;
 int PORT = 0;
 char LOG_FILE[] = {'/','s','d','c','a','r','d','/','r','o','o','t','_','s','e','r','v','e','r','.','l','o','g','\0'};
 void writeToLog(const std::string & message) {
+    printf("%s\n", message.c_str());
     // std::ofstream logFile(LOG_FILE, std::ios::app);
     // if (!logFile) {
     //     std::cerr << "Error opening file" << std::endl;

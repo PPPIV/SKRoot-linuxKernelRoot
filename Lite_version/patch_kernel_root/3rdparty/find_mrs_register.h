@@ -6,14 +6,15 @@
 #include <time.h>
 #include "capstone-4.0.2-win64/include/capstone/capstone.h"
 
+#define MIN_REGISTER_OFFSET 0x200
+
 struct code_line {
 	uint64_t addr;
 	std::string mnemonic;
 	std::string op_str;
 };
 
-
-bool handle_mrs(const std::vector<code_line>& v_code_line, std::vector<size_t>& v_register_offset) {
+bool handle_mrs(const std::vector<code_line>& v_code_line, size_t& register_offset) {
 	bool res = false;
 	for (auto x = 0; x < v_code_line.size(); x++) {
 		auto& item = v_code_line[x];
@@ -51,43 +52,12 @@ bool handle_mrs(const std::vector<code_line>& v_code_line, std::vector<size_t>& 
 				}
 			}
 			
-			if (xFirstRegOffset) {
+			if (xFirstRegOffset > MIN_REGISTER_OFFSET) {
 				break;
 			}
 		}
-		if (xFirstRegOffset == 0) {
-			break;
-		}
-		if (xFirstRegOffset != 0x10) {
-			v_register_offset.push_back(xFirstRegOffset);
-			res = true;
-			break;
-		}
-		size_t xSecondRegNum = 0;
-		size_t xSecondRegOffset = 0;
-		y = y + 1;
-		if (y >= v_code_line.size()) {
-			break;
-		}
-		for (; y < v_code_line.size(); y++) {
-			xSecondRegNum = 0;
-			xSecondRegOffset = 0;
-			auto& item2 = v_code_line[y];
-			if (item2.mnemonic.length() < 3 || item2.mnemonic.substr(0, 3) != "ldr") {
-				continue;
-			}
-			std::stringstream fmt;
-			fmt << "x%d, [x" << xFirstRegNum << ", #%llx]";
-			if (sscanf(item2.op_str.c_str(), fmt.str().c_str(), &xSecondRegNum, &xSecondRegOffset) != 2) {
-				continue;
-			}
-			if (xSecondRegOffset) {
-				break;
-			}
-		}
-		if (xSecondRegOffset) {
-			v_register_offset.push_back(xFirstRegOffset);
-			v_register_offset.push_back(xSecondRegOffset);
+		if (xFirstRegOffset > MIN_REGISTER_OFFSET) {
+			register_offset = xFirstRegOffset;
 			res = true;
 			break;
 		}
@@ -96,7 +66,7 @@ bool handle_mrs(const std::vector<code_line>& v_code_line, std::vector<size_t>& 
 }
 
 bool handle_and
-(const std::vector<code_line>& v_code_line, std::vector<size_t>& v_register_offset) {
+(const std::vector<code_line>& v_code_line, size_t& register_offset) {
 	bool res = false;
 	for (auto x = 0; x < v_code_line.size(); x++) {
 		auto& item = v_code_line[x];
@@ -135,43 +105,12 @@ bool handle_and
 				}
 			}
 			
-			if (xFirstRegOffset) {
+			if (xFirstRegOffset > MIN_REGISTER_OFFSET) {
 				break;
 			}
 		}
-		if (xFirstRegOffset == 0) {
-			break;
-		}
-		if (xFirstRegOffset != 0x10) {
-			v_register_offset.push_back(xFirstRegOffset);
-			res = true;
-			break;
-		}
-		size_t xSecondRegNum = 0;
-		size_t xSecondRegOffset = 0;
-		y = y + 1;
-		if (y >= v_code_line.size()) {
-			break;
-		}
-		for (; y < v_code_line.size(); y++) {
-			xSecondRegNum = 0;
-			xSecondRegOffset = 0;
-			auto& item2 = v_code_line[y];
-			if (item2.mnemonic.length() < 3 || item2.mnemonic.substr(0, 3) != "ldr") {
-				continue;
-			}
-			std::stringstream fmt;
-			fmt << "x%d, [x" << xFirstRegNum << ", #%llx]";
-			if (sscanf(item2.op_str.c_str(), fmt.str().c_str(), &xSecondRegNum, &xSecondRegOffset) != 2) {
-				continue;
-			}
-			if (xSecondRegOffset) {
-				break;
-			}
-		}
-		if (xSecondRegOffset) {
-			v_register_offset.push_back(xFirstRegOffset);
-			v_register_offset.push_back(xSecondRegOffset);
+		if (xFirstRegOffset > MIN_REGISTER_OFFSET) {
+			register_offset = xFirstRegOffset;
 			res = true;
 			break;
 		}
@@ -179,13 +118,13 @@ bool handle_and
 	return res;
 }
 
-bool handle_current_task_next_register_offset(const std::string& group_name, const std::vector<code_line>& v_code_line, std::string& mode_name, std::vector<size_t>& v_register_offset) {
-	bool _mrs = handle_mrs(v_code_line, v_register_offset);
+bool handle_current_task_next_register_offset(const std::string& group_name, const std::vector<code_line>& v_code_line, std::string& mode_name, size_t& register_offset) {
+	bool _mrs = handle_mrs(v_code_line, register_offset);
 	if (_mrs) {
 		mode_name = "mrs";
 		return _mrs;
 	}
-	bool _and = handle_and(v_code_line, v_register_offset);
+	bool _and = handle_and(v_code_line, register_offset);
 	if (_and) {
 		mode_name = "and";
 		return true;
@@ -193,7 +132,7 @@ bool handle_current_task_next_register_offset(const std::string& group_name, con
 	return false;
 }
 
-bool find_current_task_next_register_offset(const std::vector<char>& file_buf, size_t start, std::string & mode_name, std::vector<size_t> & v_register_offset) {
+bool find_current_task_next_register_offset(const std::vector<char>& file_buf, size_t start, std::string & mode_name,size_t& register_offset) {
 	bool res = false;
 	csh handle;
 	cs_err err = cs_open(CS_ARCH_ARM64, CS_MODE_LITTLE_ENDIAN, &handle);
@@ -220,7 +159,7 @@ bool find_current_task_next_register_offset(const std::vector<char>& file_buf, s
 		cs_detail* detail = insn->detail;
 		if (detail->groups_count > 0 && v_code_line.size() >= 2) {
 			std::string group_name = cs_group_name(handle, detail->groups[0]);
-			res = handle_current_task_next_register_offset(group_name, v_code_line, mode_name, v_register_offset);
+			res = handle_current_task_next_register_offset(group_name, v_code_line, mode_name, register_offset);
 			if (res) {
 				break;
 			}

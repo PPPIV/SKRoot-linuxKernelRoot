@@ -18,7 +18,7 @@ int PatchAvcDenied::get_need_read_cap_cnt() {
 	return cnt;
 }
 
-size_t PatchAvcDenied::patch_avc_denied_first_guide(const SymbolRegion& hook_func_start_region, const std::vector<size_t>& task_struct_offset_cred,
+size_t PatchAvcDenied::patch_avc_denied_first_guide(const SymbolRegion& hook_func_start_region, size_t task_struct_offset_cred,
 	std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
 	size_t hook_func_start_addr = hook_func_start_region.offset;
 	if (hook_func_start_addr == 0) { return 0; }
@@ -27,15 +27,9 @@ size_t PatchAvcDenied::patch_avc_denied_first_guide(const SymbolRegion& hook_fun
 
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
-	uint32_t sp_el0_id = SysReg::encode(3, 0, 4, 1, 0);
 
-	a->mrs(x11, sp_el0_id);
-	for (auto x = 0; x < task_struct_offset_cred.size(); x++) {
-		if (x != task_struct_offset_cred.size() - 1) {
-			a->ldr(x11, ptr(x11, task_struct_offset_cred[x]));
-		}
-	}
-	a->ldr(x11, ptr(x11, task_struct_offset_cred.back()));
+	get_current_task_struct(a, x11);
+	a->ldr(x11, ptr(x11, task_struct_offset_cred));
 
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 
@@ -86,7 +80,6 @@ size_t PatchAvcDenied::patch_avc_denied_core(const SymbolRegion& hook_func_start
 	a->b(CondCode::kCC, label_end);
 	a->subs(x13, x13, Imm(1));
 	a->b(CondCode::kNE, label_cycle_cap);
-
 	a->mov(w0, wzr);
 	a->bind(label_end);
 	a->ret(x30);

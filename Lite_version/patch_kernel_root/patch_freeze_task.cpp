@@ -8,13 +8,13 @@ PatchFreezeTask::PatchFreezeTask(const std::vector<char>& file_buf, size_t freez
 
 PatchFreezeTask::~PatchFreezeTask() {}
 
-size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_region, const std::vector<size_t>& task_struct_offset_cred,
+size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_region, size_t task_struct_offset_cred,
 	std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
 	size_t hook_func_start_addr = hook_func_start_region.offset; 
 	if (hook_func_start_addr == 0) { return 0; }
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
 
-	int cred_euid_start_pos = get_cred_euid_start_pos();
+	int cred_euid_start_pos = get_cred_euid_offset();
 
 	size_t hook_jump_back_addr = m_freeze_task + 4;
 
@@ -22,13 +22,7 @@ size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_re
 	auto& a = asm_info.a;
 	Label label_end = a->newLabel();
 
-	a->mov(x11, x0);
-	for (auto x = 0; x < task_struct_offset_cred.size(); x++) {
-		if (x != task_struct_offset_cred.size() - 1) {
-			a->ldr(x11, ptr(x11, task_struct_offset_cred[x]));
-		}
-	}
-	a->ldr(x11, ptr(x11, task_struct_offset_cred.back()));
+	a->ldr(x11, ptr(x0, task_struct_offset_cred));
 	a->cbz(x11, label_end);
 	a->ldr(w12, ptr(x11, cred_euid_start_pos));
 	a->cbnz(w12, label_end);
@@ -36,6 +30,7 @@ size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_re
 	a->ret(x30);
 	a->bind(label_end);
 	a->mov(x0, x0);
+
 	aarch64_asm_b(a, (int32_t)(hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 

@@ -1,18 +1,22 @@
 ﻿#include "testRoot.h"
+#include <thread>
+#include <vector>
+#include <filesystem>
+
+#include "kernel_root_kit_umbrella.h"
 
 char ROOT_KEY[50] = {0};
 
 namespace {
-	constexpr const char* k_su_base_path = "/data";
 	constexpr const char* recommend_files[] = {"libc++_shared.so"};
 }
 void test_root() {
 	// 获取ROOT权限
-	printf("%s\n", get_capability_info().c_str());
+	printf("%s\n", kernel_root::get_capability_info().c_str());
 
 	printf("get_root ret:%zd\n", kernel_root::get_root(ROOT_KEY));
 
-	printf("%s\n", get_capability_info().c_str());
+	printf("%s\n", kernel_root::get_capability_info().c_str());
 }
 
 void test_run_root_cmd(int argc, char* argv[]) {
@@ -50,7 +54,7 @@ void test_root_exec_process(int argc, char* argv[]) {
 void test_install_su_env() {
 	// 安装部署su
 	ssize_t err;
-	std::string su_hide_name = kernel_root::install_su(ROOT_KEY, k_su_base_path, err);
+	std::string su_hide_name = kernel_root::install_su(ROOT_KEY, err);
 	printf("install su hide full path:%s, err:%zd\n", su_hide_name.c_str(),
 		   err);
 }
@@ -61,7 +65,7 @@ void test_su_env_temp_inject(const char* target_pid_cmdline) {
 	}
 
 	// 1.获取su_xxx隐藏目录
-	std::string su_hide_path = kernel_root::su::find_su_hide_folder_path(ROOT_KEY, k_su_base_path);
+	std::string su_hide_path = kernel_root::get_su_hide_folder_path(ROOT_KEY);
 	printf("su_hide_path ret val:%s\n", su_hide_path.c_str());
 	if (su_hide_path.empty()) { return; }
 
@@ -91,7 +95,7 @@ void test_su_env_forever_inject(const char* target_pid_cmdline) {
 		return;
 	}
 	// 1.获取su_xxx隐藏目录
-	std::string su_hide_path = kernel_root::su::find_su_hide_folder_path(ROOT_KEY, k_su_base_path);
+	std::string su_hide_path = kernel_root::get_su_hide_folder_path(ROOT_KEY);
 	printf("su_hide_path ret val:%s\n", su_hide_path.c_str());
 	if (su_hide_path.empty()) { return; }
 
@@ -172,7 +176,7 @@ void test_su_env_forever_inject(const char* target_pid_cmdline) {
 
 void test_clean_su_env() {
 	// 完全卸载清理su
-	ssize_t err = kernel_root::uninstall_su(ROOT_KEY, k_su_base_path);
+	ssize_t err = kernel_root::uninstall_su(ROOT_KEY);
 	printf("uninstall_su err:%zd\n", err);
 }
 
@@ -182,7 +186,7 @@ void test_implant_app(const char* target_pid_cmdline) {
 	}
 
 	// 1.获取su_xxx隐藏目录
-	std::string su_hide_path = kernel_root::su::find_su_hide_folder_path(ROOT_KEY, k_su_base_path);
+	std::string su_hide_path = kernel_root::get_su_hide_folder_path(ROOT_KEY);
 	printf("test_implant_app su_hide_path ret val:%s\n", su_hide_path.c_str());
 	if (su_hide_path.empty()) { return; }
 	std::string su_hide_full_path = su_hide_path + "/su";
@@ -254,7 +258,7 @@ void test_implant_app(const char* target_pid_cmdline) {
     }
 	
 	// 3.寄生植入目标APP
-	err = kernel_root::parasite_implant_app(ROOT_KEY, target_pid_cmdline, it->first.c_str(), su_hide_path.c_str());
+	err = kernel_root::parasite_implant_app(ROOT_KEY, target_pid_cmdline, it->first.c_str());
 	printf("parasite_implant_app err:%zd\n", err);
 	if(err) { return; }
 
@@ -303,7 +307,7 @@ int main(int argc, char* argv[]) {
 	++argv;
 	--argc;
 	if (argc == 1 && strcmp(argv[0], "id") == 0) {
-		std::cout << get_capability_info() << std::endl;
+		std::cout << kernel_root::get_capability_info() << std::endl;
 		return 0;
 	}
 	if (argc < 2) {
