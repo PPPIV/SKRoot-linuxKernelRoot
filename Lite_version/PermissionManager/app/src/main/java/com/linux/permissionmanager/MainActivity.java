@@ -3,16 +3,11 @@ package com.linux.permissionmanager;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -35,18 +30,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.linux.permissionmanager.Adapter.SelectAppRecyclerAdapter;
-import com.linux.permissionmanager.Adapter.SelectFileRecyclerAdapter;
-import com.linux.permissionmanager.Model.PopupWindowOnTouchClose;
-import com.linux.permissionmanager.Model.SelectAppRecyclerItem;
-import com.linux.permissionmanager.Model.SelectFileRecyclerItem;
-import com.linux.permissionmanager.Utils.DialogUtils;
-import com.linux.permissionmanager.Utils.ScreenInfoUtils;
+import com.linux.permissionmanager.adapter.SelectAppRecyclerAdapter;
+import com.linux.permissionmanager.adapter.SelectFileRecyclerAdapter;
+import com.linux.permissionmanager.model.PopupWindowOnTouchClose;
+import com.linux.permissionmanager.model.SelectAppRecyclerItem;
+import com.linux.permissionmanager.model.SelectFileRecyclerItem;
+import com.linux.permissionmanager.utils.ClipboardUtils;
+import com.linux.permissionmanager.utils.DialogUtils;
+import com.linux.permissionmanager.utils.ScreenInfoUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.File;
 import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -54,13 +49,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private String rootKey = "";
     private String lastInputCmd = "id";
     private String lastInputRootExecPath = "";
-    private SharedPreferences m_shareSave;
     private ProgressDialog m_loadingDlg = null;
     private final String[] RECOMMEND_FILES = {"libc++_shared.so"};
 
@@ -71,20 +64,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        AppSettings.init(this);
 
-        m_shareSave = getSharedPreferences("zhcs", Context.MODE_PRIVATE);
-        try {
-            rootKey = m_shareSave.getString("rootKey", rootKey);
-        } catch (Exception e) {
-        }
-        try {
-            lastInputCmd = m_shareSave.getString("lastInputCmd", lastInputCmd);
-        } catch (Exception e) {
-        }
-        try {
-            lastInputRootExecPath = m_shareSave.getString("lastInputRootExecPath", lastInputRootExecPath);
-        } catch (Exception e) {
-        }
+        rootKey = AppSettings.getString("rootKey", rootKey);
+        lastInputCmd = AppSettings.getString("lastInputCmd", lastInputCmd);
+        lastInputRootExecPath = AppSettings.getString("lastInputRootExecPath", lastInputRootExecPath);
         showInputRootKeyDlg();
 
         Button test_root_btn = findViewById(R.id.test_root_btn);
@@ -148,9 +132,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void handleMessage(@NonNull Message msg) {
                 String text = (String)msg.obj;
                 rootKey = text;
-                SharedPreferences.Editor mEdit = m_shareSave.edit();
-                mEdit.putString("rootKey", rootKey);
-                mEdit.commit();
+                AppSettings.setString("rootKey", rootKey);
                 super.handleMessage(msg);
             }
         };
@@ -163,9 +145,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void handleMessage(@NonNull Message msg) {
                 String text = (String)msg.obj;
                 lastInputCmd = text;
-                SharedPreferences.Editor mEdit = m_shareSave.edit();
-                mEdit.putString("lastInputCmd", lastInputCmd);
-                mEdit.commit();
+                AppSettings.setString("lastInputCmd", lastInputCmd);
                 appendConsoleMsg(text + "\n" + runRootCmd(rootKey, text));
                 super.handleMessage(msg);
             }
@@ -180,9 +160,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 String text = (String)msg.obj;
 
                 lastInputRootExecPath = text;
-                SharedPreferences.Editor mEdit = m_shareSave.edit();
-                mEdit.putString("lastInputRootExecPath", lastInputRootExecPath);
-                mEdit.commit();
+                AppSettings.setString("lastInputRootExecPath", lastInputRootExecPath);
                 appendConsoleMsg(text + "\n" + rootExecProcessCmd(rootKey, text));
                 super.handleMessage(msg);
             }
@@ -206,14 +184,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             appendConsoleMsg("lastInstallSuFullPath:" + suFullPath);
             DialogUtils.showMsgDlg(this,"温馨提示",
                     "安装部署su成功，su路径已复制到剪贴板。", null);
-            copyEditText(suFullPath);
+            ClipboardUtils.copyText(this, suFullPath);
             appendConsoleMsg("安装部署su成功，su路径已复制到剪贴板");
         }
     }
 
     public void onClickSuEnvUninstallBtn() {
         appendConsoleMsg(uninstallSu(rootKey));
-        copyEditText("");
+        ClipboardUtils.copyText(this, "");
     }
 
     private void suTempInject() {
@@ -414,19 +392,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public void copyConsoleMsg() {
         EditText edit = findViewById(R.id.console_edit);
-        copyEditText(edit.getText().toString());
+        ClipboardUtils.copyText(this, edit.getText().toString());
         Toast.makeText(this, "复制成功", Toast.LENGTH_SHORT).show();
     }
 
     public void cleanConsoleMsg() {
         EditText console_edit = findViewById(R.id.console_edit);
         console_edit.setText("");
-    }
-
-    public void copyEditText(String text) {
-        ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData mClipData = ClipData.newPlainText("Label", text);
-        cm.setPrimaryClip(mClipData);
     }
 
     public View showSelectAppDlg(Handler selectAppCallback) {
