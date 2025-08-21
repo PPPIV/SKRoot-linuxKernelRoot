@@ -1,15 +1,61 @@
 package com.linux.permissionmanager.utils;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Message;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 
+import java.util.List;
+
 public class DialogUtils {
+    public static void showCustomDialog(Context context, String title, String message,
+                                        Drawable icon,
+                                        String positiveButtonText, DialogInterface.OnClickListener positiveClickListener,
+                                        String negativeButtonText, DialogInterface.OnClickListener negativeClickListener) {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(title)
+                .setMessage(message)
+                .setCancelable(false);
+
+        if (icon != null) {
+            builder.setIcon(icon);
+        }
+
+        if (positiveButtonText != null && positiveClickListener != null) {
+            builder.setPositiveButton(positiveButtonText, positiveClickListener);
+        }
+        if (negativeButtonText != null && negativeClickListener != null) {
+            builder.setNegativeButton(negativeButtonText, negativeClickListener);
+        }
+        builder.show();
+    }
+
+    public static void showNeedPermissionDialog(Context context) {
+        DialogUtils.showCustomDialog(
+                context,
+                "权限申请",
+                "请授予权限后重新操作",
+                null,
+                "确定", (dialog, which) -> {
+                    dialog.dismiss();
+                },
+                null, null
+        );
+    }
 
     /**
      * 显示带有消息的对话框。
@@ -20,19 +66,14 @@ public class DialogUtils {
      * @param icon    对话框图标（可为 null）
      */
     public static void showMsgDlg(Context context, String title, String msg, Drawable icon) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(title);
-        builder.setMessage(msg);
-        if (icon != null) {
-            builder.setIcon(icon);
-        }
-        builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-                dialog.dismiss();
-            }
-        });
-        AlertDialog dialog = builder.create();
-        dialog.show();
+        showCustomDialog(
+                context,
+                title,
+                msg,
+                icon,
+                "确定", (dialog, which) -> dialog.dismiss(),
+                null, null
+        );
     }
 
     /**
@@ -85,6 +126,66 @@ public class DialogUtils {
         }
 
         AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+
+    public static void showLogDialog(Context context, List<String> logs) {
+        String logText = logs.isEmpty() ? "No logs" : android.text.TextUtils.join("\n", logs);
+        // 创建全屏 Dialog
+        Dialog dialog = new Dialog(context);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        // 创建一个外部的线性布局（垂直方向）
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 50, 50, 50);
+
+        // 创建 TextView 作为日志显示区域
+        TextView textView = new TextView(context);
+        textView.setTextSize(14);
+        textView.setText(logText);
+        textView.setTextIsSelectable(true); // 允许选中复制
+        textView.setVerticalScrollBarEnabled(true);
+        textView.setSingleLine(false); // 允许多行显示
+        textView.setMaxLines(Integer.MAX_VALUE); // 让其支持无限行
+        textView.setLineSpacing(1.5f, 1.2f); // 增加行间距，增强可读性
+
+        // ScrollView 使日志可以滚动
+        ScrollView scrollView = new ScrollView(context);
+        scrollView.addView(textView);
+        scrollView.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0, 1 // 设置权重，让日志区域填满大部分屏幕
+        ));
+
+        // 让 ScrollView 自动滚动到底部
+        scrollView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+        });
+
+
+        // 创建一个底部的“关闭”按钮
+        Button closeButton = new Button(context);
+        closeButton.setText("关闭");
+        closeButton.setOnClickListener(v -> {
+            dialog.dismiss();
+        });
+
+        // 将 ScrollView 和按钮添加到主布局
+        layout.addView(scrollView);
+        layout.addView(closeButton);
+
+        // 设置 Dialog 的内容
+        dialog.setContentView(layout);
+
+        // 设置全屏属性
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            window.setGravity(Gravity.CENTER);
+        }
+
         dialog.show();
     }
 }

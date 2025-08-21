@@ -243,7 +243,7 @@ std::string handle_get_app_list(bool isShowSystemApp, bool isShowThirtyApp, bool
 void inject_su_thread() {
     writeToLog("inject_su_thread enter");
 
-	std::string su_folder = kernel_root::get_su_hide_folder_path(ROOT_KEY.c_str());
+	std::string su_folder = kernel_root::get_su_hide_folder_path_string(ROOT_KEY.c_str());
     g_inject_su_info.append_console_msg("su_folder ret val:" + su_folder);
 
     // 1.杀光所有历史进程

@@ -17,6 +17,7 @@ set(OTHER_SRC
 		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_process_cmdline_utils.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_process64_inject.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_ptrace_arm64_utils.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_su_hide_folder.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_su_install_helper.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_upx_helper.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_parasite_app.cpp"

@@ -3,7 +3,7 @@
 
 namespace kernel_root {
 
-std::string get_su_hide_folder_path(const char* str_root_key);
+std::string get_su_hide_folder_path_string(const char* str_root_key);
 
 #if !defined(SU_MODE)
 

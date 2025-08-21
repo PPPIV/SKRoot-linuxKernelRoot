@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ProgressDialog m_loadingDlg = null;
     private final String[] RECOMMEND_FILES = {"libc++_shared.so"};
 
+	private EditText console_edit;
     static {
         System.loadLibrary("permissionmanager");
     }
@@ -80,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Button implant_app_btn = findViewById(R.id.implant_app_btn);
         Button copy_info_btn = findViewById(R.id.copy_info_btn);
         Button clean_info_btn = findViewById(R.id.clean_info_btn);
+        console_edit = findViewById(R.id.console_edit);
 
         test_root_btn.setOnClickListener(this);
         run_root_cmd_btn.setOnClickListener(this);
@@ -378,7 +380,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void appendConsoleMsg(String msg) {
-        EditText console_edit = findViewById(R.id.console_edit);
         StringBuffer txt = new StringBuffer();
         txt.append(console_edit.getText().toString());
         if (txt.length() != 0) {
@@ -391,13 +392,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void copyConsoleMsg() {
-        EditText edit = findViewById(R.id.console_edit);
-        ClipboardUtils.copyText(this, edit.getText().toString());
+        ClipboardUtils.copyText(this, console_edit.getText().toString());
         Toast.makeText(this, "复制成功", Toast.LENGTH_SHORT).show();
     }
 
     public void cleanConsoleMsg() {
-        EditText console_edit = findViewById(R.id.console_edit);
         console_edit.setText("");
     }
 

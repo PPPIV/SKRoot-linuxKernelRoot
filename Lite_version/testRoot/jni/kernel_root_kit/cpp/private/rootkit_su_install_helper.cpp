@@ -15,45 +15,11 @@
 #if !defined(SU_MODE)
 #include "rootkit_su_exec_data.h"
 #endif
+#include "rootkit_su_hide_folder.h"
 #include "rootkit_file_replace_string.h"
 #include "rootkit_file_selinux_utils.h"
 
 namespace kernel_root {
-namespace {
-constexpr const char* k_su_base_path = "/data";
-}
-
-std::string get_su_hide_folder_path(const char* str_root_key) {
-	std::string before16 = std::string(str_root_key).substr(0, 16);
-	std::string file_path = k_su_base_path;
-	file_path += "/" + before16;
-	return file_path;
-}
-
-bool __create_directory_if_not_exists(const std::string& dir_path) {
-    if (access(dir_path.c_str(), F_OK) == -1) {
-        return mkdir(dir_path.c_str(), 0755) == 0;
-    }
-    return true;
-}
-
-std::string create_su_hide_folder(const char* str_root_key) {
-    std::string file_path = get_su_hide_folder_path(str_root_key);
-    // Check and create directories
-    if (!__create_directory_if_not_exists(file_path)) return {};
-    if (!set_file_allow_access_mode(file_path)) return {};
-    return file_path;
-}
-
-bool del_su_hide_folder(const char* str_root_key) {
-    std::string file_path = get_su_hide_folder_path(str_root_key);
-	try {
-		std::filesystem::remove_all(file_path);
-	} catch (...) {
-	}
-	return std::filesystem::exists(file_path);
-}
-
 #if !defined(SU_MODE)
 bool write_su_exec(const char* str_root_key, const char* target_path) {
 	std::shared_ptr<char> sp_su_exec_file_data(new (std::nothrow) char[su_exec_file_size], std::default_delete<char[]>());
@@ -81,13 +47,7 @@ std::string unsafe_install_su(const char* str_root_key, ssize_t& err) {
 		err = ERR_NO_ROOT;
 		return {};
 	}
-
-	std::string _su_hide_folder_path = kernel_root::create_su_hide_folder(str_root_key);
-	if (_su_hide_folder_path.empty()) {
-		err = ERR_CREATE_SU_HIDE_FOLDER;
-		return {};
-	}
-	std::string su_hide_full_path = _su_hide_folder_path + "/su";
+	std::string su_hide_full_path = get_su_hide_folder_path_string(str_root_key) + "/su";
 	if(!std::filesystem::exists(su_hide_full_path.c_str())) {
 		if (!write_su_exec(str_root_key, su_hide_full_path.c_str())) {
 			err = ERR_WRITE_SU_EXEC;
@@ -127,37 +87,15 @@ std::string safe_install_su(const char* str_root_key, ssize_t& err) {
 }
 
 std::string install_su(const char* str_root_key, ssize_t& err) {
+	err = create_su_hide_folder(str_root_key);
+	if(err != ERR_NONE) {
+		return {};
+	}
 	return safe_install_su(str_root_key, err);
 }
 
-ssize_t unsafe_uninstall_su(const char* str_root_key) {
-	if (kernel_root::get_root(str_root_key) != ERR_NONE) {
-		return ERR_NO_ROOT;
-	}
-	return kernel_root::del_su_hide_folder(str_root_key) ? ERR_DEL_HIDE_FOLDER : 0;
-}
-
-ssize_t safe_uninstall_su(const char* str_root_key) {
-	ssize_t err = ERR_NONE;
-	fork_pipe_info finfo;
-	if(fork_pipe_child_process(finfo)) {
-		err = unsafe_uninstall_su(str_root_key);
-		write_errcode_from_child(finfo, err);
-		_exit(0);
-		return ERR_NONE;
-	}
-	if(!is_fork_child_process_work_finished(finfo)) {
-		err = ERR_WAIT_FORK_CHILD;
-	} else {
-		if(!read_errcode_from_child(finfo, err)) {
-			err = ERR_READ_CHILD_ERRCODE;
-		}
-	}
-	return err;
-}
-
 ssize_t uninstall_su(const char* str_root_key) {
-	return safe_uninstall_su(str_root_key);
+	return del_su_hide_folder(str_root_key);
 }
 #endif
 }
