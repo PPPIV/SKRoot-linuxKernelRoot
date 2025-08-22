@@ -4,6 +4,8 @@
 using namespace asmjit;
 using namespace asmjit::a64;
 using namespace asmjit::a64::Predicate;
+
+#define HEAD_ROOT_KEY_LEN 16
 PatchFilldir64::PatchFilldir64(const std::vector<char>& file_buf, size_t filldir64) : PatchBase(file_buf), m_filldir64(filldir64) {}
 
 PatchFilldir64::~PatchFilldir64() {}
@@ -45,7 +47,7 @@ size_t PatchFilldir64::patch_filldir64_core(const SymbolRegion& hook_func_start_
 	Label label_end = a->newLabel();
 	Label label_cycle_name = a->newLabel();
 
-	a->cmp(w2, Imm(16));
+	a->cmp(w2, Imm(HEAD_ROOT_KEY_LEN));
 	a->b(CondCode::kNE, label_end);
 	a->mov(x12, Imm(0));
 	a->bind(label_cycle_name);
@@ -54,7 +56,7 @@ size_t PatchFilldir64::patch_filldir64_core(const SymbolRegion& hook_func_start_
 	a->cmp(w13, w14);
 	a->b(CondCode::kNE, label_end);
 	a->add(x12, x12, Imm(1));
-	a->cmp(x12, Imm(16));
+	a->cmp(x12, Imm(HEAD_ROOT_KEY_LEN));
 	a->b(CondCode::kLT, label_cycle_name);
 	if (m_kernel_ver_parser.is_kernel_version_less("6.1.0")) {
 		a->mov(x0, xzr);
