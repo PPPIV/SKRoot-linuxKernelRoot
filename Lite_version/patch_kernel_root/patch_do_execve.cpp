@@ -68,6 +68,7 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	Label label_end = a->newLabel();
 	Label label_cycle_name = a->newLabel();
 	Label label_correct = a->newLabel();
+	int key_start = a->offset();
 	a->embed((const uint8_t*)empty_root_key_buf, sizeof(empty_root_key_buf));
 	a->mov(x0, x0);
 	a->mov(x11, Imm(uint64_t(-4095)));
@@ -78,7 +79,7 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	} else {
 		a->ldr(x11, ptr(a64::x(m_doexecve_reg_param.do_execve_filename_reg)));
 	}
-	int32_t key_offset = -a->offset();
+	int key_offset = key_start - a->offset();
 	aarch64_asm_adr_x(a, x12, key_offset);
 	a->bind(label_cycle_name);
 	a->ldrb(w14, ptr(x11).post(1));
