@@ -4,7 +4,6 @@
 #include <string.h>
 #include <errno.h>
 #include <malloc.h>
-#include <dirent.h>
 #include <sys/wait.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -21,22 +20,6 @@ ssize_t get_root(const char* str_root_key) {
 	syscall(__NR_execve, str_root_key, NULL, NULL);
 	if(getuid() != 0) { return ERR_NO_ROOT; }
 	return ERR_NONE;
-}
-
-bool is_enable_selinux() {
-	int cnt = 0;
-	DIR* dir = opendir("/system/bin");
-	if (NULL != dir) {
-		struct dirent* ptr = NULL;
-		while ((ptr = readdir(dir)) != NULL) {
-			if ((strcmp(ptr->d_name, ".") == 0) || (strcmp(ptr->d_name, "..") == 0)) {
-				continue;
-			}
-			cnt++;
-		}
-		closedir(dir);
-	}
-	return cnt > 5 ? false : true;
 }
 
 std::string run_root_cmd(const char* str_root_key, const char* cmd, ssize_t & err) {
