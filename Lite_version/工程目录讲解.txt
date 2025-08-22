@@ -1,0 +1,6 @@
+SKRoot(Lite)各目录作用说明：
+
+patch_kernel_root：修补内核为SKRoot(Lite)的工具
+PermissionManager：演示所有Root权限操作的APP
+
+testRoot：演示所有Root权限操作的jni程序
