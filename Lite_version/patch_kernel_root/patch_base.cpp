@@ -86,7 +86,7 @@ bool PatchBase::is_CONFIG_THREAD_INFO_IN_TASK() {
 	return !m_kernel_ver_parser.is_kernel_version_less("4.4.207");
 }
 
-void PatchBase::get_current_task_struct(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit::a64::GpX x) {
+void PatchBase::get_current_task(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit::a64::GpX x) {
 	struct thread_info {
 		uint64_t flags;		/* low level flags */
 		uint64_t addr_limit;	/* address limit */

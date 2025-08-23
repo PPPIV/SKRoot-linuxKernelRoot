@@ -19,7 +19,7 @@ protected:
 	int get_cap_cnt();
 
 	bool is_CONFIG_THREAD_INFO_IN_TASK();
-	void get_current_task_struct(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit::a64::GpX x);
+	void get_current_task(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit::a64::GpX x);
 
 	const std::vector<char>& m_file_buf;
 	KernelVersionParser m_kernel_ver_parser;

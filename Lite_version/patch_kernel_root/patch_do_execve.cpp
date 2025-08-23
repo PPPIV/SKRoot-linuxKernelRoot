@@ -90,7 +90,7 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	a->b(CondCode::kNE, label_end);
 	a->b(label_cycle_name);
 	a->bind(label_correct);
-	get_current_task_struct(a, x12);
+	get_current_task(a, x12);
 	a->ldr(x14, ptr(x12, task_struct_offset_cred));
 	a->add(x14, x14, Imm(atomic_usage_len));
 	a->str(xzr, ptr(x14).post(8));

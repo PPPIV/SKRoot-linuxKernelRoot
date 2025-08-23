@@ -28,7 +28,7 @@ size_t PatchAvcDenied::patch_avc_denied_first_guide(const SymbolRegion& hook_fun
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 
-	get_current_task_struct(a, x11);
+	get_current_task(a, x11);
 	a->ldr(x11, ptr(x11, task_struct_offset_cred));
 
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
