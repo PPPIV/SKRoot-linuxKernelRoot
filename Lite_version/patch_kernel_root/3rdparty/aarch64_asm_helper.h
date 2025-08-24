@@ -177,6 +177,12 @@ static void aarch64_asm_mov_w(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit
 	}
 }
 
+static void aarch64_asm_safe_blr(std::unique_ptr<asmjit::a64::Assembler> &a, asmjit::a64::GpX x) {
+	a->stp(x29, x30, ptr(sp).pre(-16));
+	a->blr(x);
+	a->ldp(x29, x30, ptr(sp).post(16));
+}
+
 static bool aarch64_asm_pacia(std::unique_ptr<asmjit::a64::Assembler>& a, const asmjit::a64::GpX& reg) {
 	uint32_t reg_n = reg.id();
 	if (reg_n > 31) {
