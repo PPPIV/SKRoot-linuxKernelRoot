@@ -7,8 +7,7 @@
 #include <thread>
 #include <sys/capability.h>
 
-#include "../../../../../testRoot/jni/kernel_root_kit/kernel_root_kit_umbrella.h"
-#include "../../../../../testRoot/jni/testRoot.h"
+#include "kernel_root_kit/include/rootkit_umbrella.h"
 #include "urlEncodeUtils.h"
 #include "cJSON.h"
 using namespace std;

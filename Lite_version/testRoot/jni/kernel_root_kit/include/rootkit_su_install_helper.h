@@ -5,8 +5,6 @@ namespace kernel_root {
 
 std::string get_su_hide_folder_path_string(const char* str_root_key);
 
-#if !defined(SU_MODE)
-
 /***************************************************************************
  * 安装 su（超级用户）环境
  * 参数:
@@ -27,5 +25,5 @@ std::string install_su(
  * 返回: ERR_NONE 表示卸载成功 其余为错误码
  ***************************************************************************/
 ssize_t uninstall_su(const char* str_root_key);
-#endif
+
 } // namespace kernel_root

@@ -5,8 +5,8 @@ using namespace asmjit;
 using namespace asmjit::a64;
 using namespace asmjit::a64::Predicate;
 
-PatchAvcDenied::PatchAvcDenied(const std::vector<char>& file_buf, const SymbolRegion& avc_denied)
-	: PatchBase(file_buf), m_avc_denied(avc_denied) {}
+PatchAvcDenied::PatchAvcDenied(const PatchBase& patch_base, const SymbolRegion& avc_denied)
+	: PatchBase(patch_base), m_avc_denied(avc_denied) {}
 
 PatchAvcDenied::~PatchAvcDenied() {}
 
@@ -18,7 +18,7 @@ int PatchAvcDenied::get_need_read_cap_cnt() {
 	return cnt;
 }
 
-size_t PatchAvcDenied::patch_avc_denied_first_guide(const SymbolRegion& hook_func_start_region, size_t task_struct_offset_cred,
+size_t PatchAvcDenied::patch_avc_denied_first_guide(const SymbolRegion& hook_func_start_region, size_t task_struct_cred_offset,
 	std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
 	size_t hook_func_start_addr = hook_func_start_region.offset;
 	if (hook_func_start_addr == 0) { return 0; }
@@ -27,12 +27,9 @@ size_t PatchAvcDenied::patch_avc_denied_first_guide(const SymbolRegion& hook_fun
 
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
-
-	get_current_task(a, x11);
-	a->ldr(x11, ptr(x11, task_struct_offset_cred));
-
+	get_current_to_reg(a, x11);
+	a->ldr(x11, ptr(x11, task_struct_cred_offset));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
-
 	std::vector<uint8_t> bytes = aarch64_asm_to_bytes(asm_info);
 	if (bytes.size() == 0) {
 		return 0;
@@ -57,6 +54,7 @@ size_t PatchAvcDenied::patch_avc_denied_core(const SymbolRegion& hook_func_start
 	int cred_euid_start_pos = get_cred_euid_offset();
 	int uid_region_len = get_cred_uid_region_len();
 	int securebits_padding = get_cred_securebits_padding();
+	int securebits_len = 4 + securebits_padding;
 	uint64_t cap_ability_max = get_cap_ability_max();
 	int cap_cnt = get_need_read_cap_cnt();
 
@@ -64,20 +62,18 @@ size_t PatchAvcDenied::patch_avc_denied_core(const SymbolRegion& hook_func_start
 	auto& a = asm_info.a;
 	Label label_end = a->newLabel();
 	Label label_cycle_cap = a->newLabel();
-
 	a->ldr(w12, ptr(x11, cred_euid_start_pos));
 	a->cbnz(w12, label_end);
 	a->add(x11, x11, Imm(atomic_usage_len + uid_region_len));
-	a->mov(w12, Imm(0xc));
-	a->ldr(w13, ptr(x11).post(4 + securebits_padding));
-	a->cmp(w12, w13);
+	a->ldr(w13, ptr(x11).post(securebits_len));
+	a->cmp(w13, Imm(0xc));
 	a->b(CondCode::kNE, label_end);
 	a->mov(x12, Imm(cap_ability_max));
 	a->mov(x13, Imm(cap_cnt));
 	a->bind(label_cycle_cap);
 	a->ldr(x14, ptr(x11).post(8));
 	a->cmp(x14, x12);
-	a->b(CondCode::kCC, label_end);
+	a->b(CondCode::kLO, label_end);
 	a->subs(x13, x13, Imm(1));
 	a->b(CondCode::kNE, label_cycle_cap);
 	a->mov(w0, wzr);

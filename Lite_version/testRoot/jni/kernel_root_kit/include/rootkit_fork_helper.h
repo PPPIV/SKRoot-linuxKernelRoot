@@ -9,11 +9,36 @@
 namespace kernel_root {
 class fork_base_info {
 public:
-    fork_base_info();
-    ~fork_base_info();
-    void reset();
-    void close();
+	fork_base_info() { reset(); }
+	~fork_base_info() { close(); }
+	void reset() {
+		close();
+		fd_read_parent = -1;
+		fd_write_parent = -1;
+		fd_read_child = -1;
+		fd_write_child = -1;
+		parent_pid = getpid();
+		child_pid = 0;
+	}
 
+	void close() {
+		if (fd_read_parent != -1) {
+			::close(fd_read_parent);
+			fd_read_parent = -1;
+		}
+		if (fd_write_parent != -1) {
+			::close(fd_write_parent);
+			fd_write_parent = -1;
+		}
+		if (fd_read_child != -1) {
+			::close(fd_read_child);
+			fd_read_child = -1;
+		}
+		if (fd_write_child != -1) {
+			::close(fd_write_child);
+			fd_write_child = -1;
+		}
+	}
 	int fd_read_parent = -1;
     int fd_write_parent = -1;
     int fd_read_child = -1;

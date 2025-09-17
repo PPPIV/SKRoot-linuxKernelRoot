@@ -6,8 +6,9 @@
 #include <time.h>
 #include "capstone-4.0.2-win64/include/capstone/capstone.h"
 
-#define MIN_REGISTER_OFFSET 0x200
 
+namespace a64_find_mrs_register {
+constexpr int kMinRegisterOffset = 0x200;
 struct code_line {
 	uint64_t addr;
 	std::string mnemonic;
@@ -51,12 +52,12 @@ bool handle_mrs(const std::vector<code_line>& v_code_line, size_t& register_offs
 					continue;
 				}
 			}
-			
-			if (xFirstRegOffset > MIN_REGISTER_OFFSET) {
+
+			if (xFirstRegOffset > kMinRegisterOffset) {
 				break;
 			}
 		}
-		if (xFirstRegOffset > MIN_REGISTER_OFFSET) {
+		if (xFirstRegOffset > kMinRegisterOffset) {
 			register_offset = xFirstRegOffset;
 			res = true;
 			break;
@@ -65,8 +66,7 @@ bool handle_mrs(const std::vector<code_line>& v_code_line, size_t& register_offs
 	return res;
 }
 
-bool handle_and
-(const std::vector<code_line>& v_code_line, size_t& register_offset) {
+bool handle_and(const std::vector<code_line>& v_code_line, size_t& register_offset) {
 	bool res = false;
 	for (auto x = 0; x < v_code_line.size(); x++) {
 		auto& item = v_code_line[x];
@@ -104,12 +104,12 @@ bool handle_and
 					continue;
 				}
 			}
-			
-			if (xFirstRegOffset > MIN_REGISTER_OFFSET) {
+
+			if (xFirstRegOffset > kMinRegisterOffset) {
 				break;
 			}
 		}
-		if (xFirstRegOffset > MIN_REGISTER_OFFSET) {
+		if (xFirstRegOffset > kMinRegisterOffset) {
 			register_offset = xFirstRegOffset;
 			res = true;
 			break;
@@ -132,7 +132,7 @@ bool handle_current_task_next_register_offset(const std::string& group_name, con
 	return false;
 }
 
-bool find_current_task_next_register_offset(const std::vector<char>& file_buf, size_t start, std::string & mode_name,size_t& register_offset) {
+bool find_current_task_next_register_offset(const std::vector<char>& file_buf, size_t start, std::string& mode_name, size_t& register_offset) {
 	bool res = false;
 	csh handle;
 	cs_err err = cs_open(CS_ARCH_ARM64, CS_MODE_LITTLE_ENDIAN, &handle);
@@ -168,4 +168,5 @@ bool find_current_task_next_register_offset(const std::vector<char>& file_buf, s
 	cs_free(insn, 1);
 	cs_close(&handle);
 	return res;
+}
 }

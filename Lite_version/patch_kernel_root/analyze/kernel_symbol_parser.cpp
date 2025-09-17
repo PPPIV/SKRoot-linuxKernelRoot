@@ -60,7 +60,6 @@ bool KernelSymbolParser::init_kallsyms_lookup_name() {
 	}
 	return true;
 }
-
 uint64_t KernelSymbolParser::kallsyms_lookup_name(const char* name) {
 	uint64_t symbol = 0;
 	if (m_kallsyms_lookup_name_6_4_0.is_inited()) {

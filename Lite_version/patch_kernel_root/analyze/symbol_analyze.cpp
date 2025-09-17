@@ -62,6 +62,13 @@ bool SymbolAnalyze::find_symbol_offset() {
 	m_kernel_sym_offset.freeze_task = kallsyms_matching_single("freeze_task");
 
 	m_kernel_sym_offset.revert_creds = kallsyms_matching_single("revert_creds");
+	m_kernel_sym_offset.sys_getuid = kallsyms_matching_single("sys_getuid");
+	if (m_kernel_sym_offset.sys_getuid == 0) {
+		m_kernel_sym_offset.sys_getuid = kallsyms_matching_single("__arm64_sys_getuid");
+		if (m_kernel_sym_offset.sys_getuid == 0) {
+			m_kernel_sym_offset.sys_getuid = kallsyms_matching_single("sys_getuid", true);
+		}
+	}
 	m_kernel_sym_offset.prctl_get_seccomp = kallsyms_matching_single("prctl_get_seccomp"); // backup: seccomp_filter_release
 	 
 	
@@ -82,6 +89,7 @@ bool SymbolAnalyze::find_symbol_offset() {
 		&& m_kernel_sym_offset.filldir64
 		&& m_kernel_sym_offset.freeze_task
 		&& m_kernel_sym_offset.revert_creds
+		&& m_kernel_sym_offset.sys_getuid
 		&& m_kernel_sym_offset.prctl_get_seccomp;
 }
 
@@ -107,6 +115,7 @@ void SymbolAnalyze::printf_symbol_offset() {
 	std::cout << "freeze_task:" << m_kernel_sym_offset.freeze_task << std::endl;
 
 	std::cout << "revert_creds:" << m_kernel_sym_offset.revert_creds << std::endl;
+	std::cout << "sys_getuid:" << m_kernel_sym_offset.sys_getuid << std::endl;
 	std::cout << "prctl_get_seccomp:" << m_kernel_sym_offset.prctl_get_seccomp << std::endl;
 
 	std::cout << "__cfi_check:" << m_kernel_sym_offset.__cfi_check.offset << ", size:" << m_kernel_sym_offset.__cfi_check.size << std::endl;

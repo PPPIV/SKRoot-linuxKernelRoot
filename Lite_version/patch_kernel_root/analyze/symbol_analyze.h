@@ -32,6 +32,7 @@ struct KernelSymbolOffset {
 	size_t freeze_task = 0;
 
 	size_t revert_creds = 0;
+	size_t sys_getuid = 0;
 	size_t prctl_get_seccomp = 0;
 
 

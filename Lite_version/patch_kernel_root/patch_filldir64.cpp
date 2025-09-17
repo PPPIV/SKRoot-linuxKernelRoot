@@ -5,7 +5,7 @@ using namespace asmjit;
 using namespace asmjit::a64;
 using namespace asmjit::a64::Predicate;
 
-PatchFilldir64::PatchFilldir64(const std::vector<char>& file_buf, size_t filldir64) : PatchBase(file_buf), m_filldir64(filldir64) {}
+PatchFilldir64::PatchFilldir64(const PatchBase& patch_base, size_t filldir64) : PatchBase(patch_base), m_filldir64(filldir64) {}
 
 PatchFilldir64::~PatchFilldir64() {}
 
@@ -13,11 +13,13 @@ size_t PatchFilldir64::patch_filldir64_root_key_guide(size_t root_key_mem_addr, 
 	size_t hook_func_start_addr = hook_func_start_region.offset;
 	if (hook_func_start_addr == 0) { return 0; }
 	std::cout << "Start hooking addr:  " << std::hex << hook_func_start_addr << std::endl << std::endl;
+
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	int root_key_adr_offset = root_key_mem_addr - (hook_func_start_addr + a->offset());
 	aarch64_asm_adr_x(a, x11, root_key_adr_offset);
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
+
 	std::vector<uint8_t> bytes = aarch64_asm_to_bytes(asm_info);
 	if (bytes.size() == 0) {
 		return 0;
@@ -67,6 +69,7 @@ size_t PatchFilldir64::patch_filldir64_core(const SymbolRegion& hook_func_start_
 	a->mov(x0, x0);
 	aarch64_asm_b(a, (int32_t)(hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
+
 	std::vector<uint8_t> bytes = aarch64_asm_to_bytes(asm_info);
 	if (bytes.size() == 0) {
 		return 0;

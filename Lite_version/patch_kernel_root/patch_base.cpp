@@ -5,16 +5,19 @@ using namespace asmjit;
 using namespace asmjit::a64;
 using namespace asmjit::a64::Predicate;
 
-PatchBase::PatchBase(const std::vector<char>& file_buf) : m_file_buf(file_buf), m_kernel_ver_parser(file_buf) {}
+PatchBase::PatchBase(const std::vector<char>& file_buf, size_t cred_uid_offset) : 
+	m_file_buf(file_buf), m_kernel_ver_parser(file_buf), m_cred_uid_offset(cred_uid_offset) {}
+
+PatchBase::PatchBase(const PatchBase& other)
+	: m_file_buf(other.m_file_buf)
+	, m_kernel_ver_parser(other.m_file_buf)
+	, m_cred_uid_offset(other.m_cred_uid_offset)
+{}
 
 PatchBase::~PatchBase() {}
 
-int PatchBase::get_cred_atomic_usage_len() { 
-	int len = 8;
-	if (m_kernel_ver_parser.is_kernel_version_less("6.6.0")) {
-		len = 4;
-	}
-	return len;
+int PatchBase::get_cred_atomic_usage_len() {
+	return m_cred_uid_offset;
 }
 
 int PatchBase::get_cred_uid_region_len() {
@@ -86,7 +89,7 @@ bool PatchBase::is_CONFIG_THREAD_INFO_IN_TASK() {
 	return !m_kernel_ver_parser.is_kernel_version_less("4.4.207");
 }
 
-void PatchBase::get_current_task(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit::a64::GpX x) {
+void PatchBase::get_current_to_reg(std::shared_ptr<asmjit::a64::Assembler> a, asmjit::a64::GpX x) {
 	struct thread_info {
 		uint64_t flags;		/* low level flags */
 		uint64_t addr_limit;	/* address limit */

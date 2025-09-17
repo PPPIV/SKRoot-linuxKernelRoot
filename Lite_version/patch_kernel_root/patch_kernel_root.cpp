@@ -7,6 +7,7 @@
 #include "patch_freeze_task.h"
 
 #include "3rdparty/find_mrs_register.h"
+#include "3rdparty/find_imm_register_offset.h"
 #pragma comment(lib, "3rdparty/capstone-4.0.2-win64/capstone.lib")
 
 struct PatchKernelResult {
@@ -18,10 +19,33 @@ bool check_file_path(const char* file_path) {
 }
 
 bool parser_cred_offset(const std::vector<char>& file_buf, size_t start, std::string& mode_name, size_t& cred_offset) {
+	using namespace a64_find_mrs_register;
 	return find_current_task_next_register_offset(file_buf, start, mode_name, cred_offset);
 }
 
+bool parse_cred_uid_offset(const std::vector<char>& file_buf, size_t start, size_t cred_offset, size_t& cred_uid_offset) {
+	using namespace a64_find_imm_register_offset;
+	cred_uid_offset = 0;
+
+	std::vector<size_t> candidate_offsets;
+	if (!find_imm_register_offset(file_buf, start, candidate_offsets))
+		return false;
+
+	auto it = std::find(candidate_offsets.begin(), candidate_offsets.end(), cred_offset);
+	if (it != candidate_offsets.end()) {
+		for (++it; it != candidate_offsets.end(); ++it) {
+			if (*it > 0x30) {
+				continue;
+			}
+			cred_uid_offset = *it;
+			break;
+		}
+	}
+	return cred_uid_offset != 0;
+}
+
 bool parser_seccomp_offset(const std::vector<char>& file_buf, size_t start, std::string& mode_name, size_t& seccomp_offset) {
+	using namespace a64_find_mrs_register;
 	return find_current_task_next_register_offset(file_buf, start, mode_name, seccomp_offset);
 }
 
@@ -71,12 +95,13 @@ void no_use_patch(const std::vector<char>& file_buf, KernelSymbolOffset &sym, st
 }
 
 
-PatchKernelResult patch_kernel_handler(const std::vector<char>& file_buf, size_t cred_offset, size_t seccomp_offset, KernelSymbolOffset& sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
+PatchKernelResult patch_kernel_handler(const std::vector<char>& file_buf, size_t cred_offset, size_t cred_uid_offset, size_t seccomp_offset, KernelSymbolOffset& sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
 	KernelVersionParser kernel_ver(file_buf);
-	PatchDoExecve patchDoExecve(file_buf, sym);
-	PatchAvcDenied patchAvcDenied(file_buf, sym.avc_denied);
-	PatchFilldir64 patchFilldir64(file_buf, sym.filldir64);
-	PatchFreezeTask patchFreezeTask(file_buf, sym.freeze_task);
+	PatchBase patchBase(file_buf, cred_uid_offset);
+	PatchDoExecve patchDoExecve(patchBase, sym);
+	PatchAvcDenied patchAvcDenied(patchBase, sym.avc_denied);
+	PatchFilldir64 patchFilldir64(patchBase, sym.filldir64);
+	PatchFreezeTask patchFreezeTask(patchBase, sym.freeze_task);
 
 	PatchKernelResult r = { 0 };
 	if (kernel_ver.is_kernel_version_less("5.5.0")) {
@@ -171,36 +196,38 @@ int main(int argc, char* argv[]) {
 
 	std::string t_mode_name;
 	size_t cred_offset  = 0;
+	size_t cred_uid_offset = 0;
 	size_t seccomp_offset = 0;
 	if (!parser_cred_offset(file_buf, sym.revert_creds, t_mode_name, cred_offset)) {
 		std::cout << "Failed to parse cred offsert" << std::endl;
 		system("pause");
 		return 0;
 	}
-	std::cout << "Parse cred offsert mode name: " << t_mode_name  << std::endl;
+	std::cout << "parse cred offsert mode name: " << t_mode_name  << std::endl;
+
+	if (!parse_cred_uid_offset(file_buf, sym.sys_getuid, cred_offset, cred_uid_offset)) {
+		std::cout << "Failed to parse cred uid offsert" << std::endl;
+		system("pause");
+		return 0;
+	}
+	std::cout << "cred uid offset:" << cred_uid_offset << std::endl;
 
 	if (!parser_seccomp_offset(file_buf, sym.prctl_get_seccomp, t_mode_name, seccomp_offset)) {
 		std::cout << "Failed to parse seccomp offsert" << std::endl;
 		system("pause");
 		return 0;
 	}
-	std::cout << "Parse seccomp offsert mode name: " << t_mode_name << std::endl;
-	std::cout << "cred_offset:" << cred_offset << std::endl;
-	std::cout << "seccomp_offset:" << seccomp_offset << std::endl;
+	std::cout << "parse seccomp offsert mode name: " << t_mode_name << std::endl;
+	std::cout << "cred offset:" << cred_offset << std::endl;
+	std::cout << "seccomp offset:" << seccomp_offset << std::endl;
 
 	std::vector<patch_bytes_data> vec_patch_bytes_data;
 	cfi_bypass(file_buf, sym, vec_patch_bytes_data);
 	huawei_bypass(file_buf, sym, vec_patch_bytes_data);
 	no_use_patch(file_buf, sym, vec_patch_bytes_data);
 
-	KernelVersionParser kernel_ver(file_buf);
-	PatchDoExecve patchDoExecve(file_buf, sym);
-	PatchAvcDenied patchAvcDenied(file_buf, sym.avc_denied);
-	PatchFilldir64 patchFilldir64(file_buf, sym.filldir64);
-	PatchFreezeTask patchFreezeTask(file_buf, sym.freeze_task);
-
 	size_t first_hook_start = 0;
-	PatchKernelResult pr = patch_kernel_handler(file_buf, cred_offset, seccomp_offset, sym, vec_patch_bytes_data);
+	PatchKernelResult pr = patch_kernel_handler(file_buf, cred_offset, cred_uid_offset, seccomp_offset, sym, vec_patch_bytes_data);
 	if (pr.root_key_start == 0) {
 		std::cout << "Failed to find hook start addr" << std::endl;
 		system("pause");

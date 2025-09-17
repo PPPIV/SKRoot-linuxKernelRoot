@@ -10,19 +10,6 @@ cmake_minimum_required(VERSION 3.18.1)
 project("permissionmanager")
 
 set(OTHER_SRC
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_command.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_exec_process.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_myinfo.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_fork_helper.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_process_cmdline_utils.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_process64_inject.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_ptrace_arm64_utils.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_su_hide_folder.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_su_install_helper.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_upx_helper.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_parasite_app.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/cpp/private/rootkit_parasite_patch_elf.cpp"
-
 		"${CMAKE_CURRENT_SOURCE_DIR}/cJSON.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/native-lib.cpp"
 		)
@@ -61,8 +48,6 @@ target_include_directories(
 		permissionmanager
 		PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/
-		${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit
-		${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/include
 )
 
 target_link_libraries( # Specifies the target library.
@@ -70,4 +55,5 @@ target_link_libraries( # Specifies the target library.
 
         # Links the target library to the log library
         # included in the NDK.
+		${CMAKE_CURRENT_SOURCE_DIR}/../../../../../testRoot/jni/kernel_root_kit/lib/libkernel_root_kit.a
         ${log-lib})

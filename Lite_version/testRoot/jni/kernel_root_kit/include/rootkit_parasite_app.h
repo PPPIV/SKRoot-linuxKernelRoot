@@ -19,7 +19,7 @@ enum app_so_status {
  ***************************************************************************/
 ssize_t parasite_precheck_app(const char* str_root_key, const char* target_pid_cmdline, std::map<std::string, app_so_status> &output_so_full_path);
 
-#if !defined(LIB_ROOT_SERVER_MODE) && !defined(SU_MODE)
+
 /***************************************************************************
  * 开始植入寄生APP
  * 参数:
@@ -29,9 +29,7 @@ ssize_t parasite_precheck_app(const char* str_root_key, const char* target_pid_c
  * 返回: ERR_NONE 表示成功; 其余为错误码
  ***************************************************************************/
 ssize_t parasite_implant_app(const char* str_root_key, const char* target_pid_cmdline, const char* original_so_full_path);
-#endif
 
-#if !defined(SU_MODE)
 /***************************************************************************
  * 开始植入寄生su环境
  * 参数:
@@ -42,5 +40,5 @@ ssize_t parasite_implant_app(const char* str_root_key, const char* target_pid_cm
  * 返回: ERR_NONE 表示成功; 其余为错误码
  ***************************************************************************/
 ssize_t parasite_implant_su_env(const char* str_root_key, const char* target_pid_cmdline, const char* original_so_full_path, std::string_view su_folder);
-#endif
+
 }

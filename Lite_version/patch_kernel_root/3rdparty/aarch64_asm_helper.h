@@ -22,7 +22,7 @@ private:
 
 struct aarch64_asm_info {
 	std::unique_ptr<asmjit::CodeHolder> codeHolder;
-	std::unique_ptr<asmjit::a64::Assembler> a;
+	std::shared_ptr<asmjit::a64::Assembler> a;
 	std::unique_ptr<asmjit::StringLogger> logger;
 	std::unique_ptr<MyAsmJitErrorHandler> err;
 };
@@ -34,7 +34,7 @@ static aarch64_asm_info init_aarch64_asm() {
 	auto logger = std::make_unique<asmjit::StringLogger>();
 	logger->addFlags(asmjit::FormatFlags::kNone);
 	code->setLogger(logger.get());
-	auto a = std::make_unique<asmjit::a64::Assembler>(code.get());
+	auto a = std::make_shared<asmjit::a64::Assembler>(code.get());
 	auto err = std::make_unique<MyAsmJitErrorHandler>();
 	a->setErrorHandler(err.get());
 	return { std::move(code), std::move(a), std::move(logger), std::move(err) };
@@ -52,7 +52,7 @@ static std::vector<uint8_t> aarch64_asm_to_bytes(const aarch64_asm_info& asm_inf
 	return std::vector<uint8_t>(data, data + data_size);
 }
 
-static bool aarch64_asm_b(std::unique_ptr<asmjit::a64::Assembler>& a, int32_t b_value) {
+static bool aarch64_asm_b(std::shared_ptr<asmjit::a64::Assembler> a, int32_t b_value) {
 	if (b_value % 4 != 0) {
 		std::cout << "[发生错误] The B instruction offset must be a multiple of 4" << std::endl;
 		return false;
@@ -68,7 +68,7 @@ static bool aarch64_asm_b(std::unique_ptr<asmjit::a64::Assembler>& a, int32_t b_
 	return true;
 }
 
-static bool aarch64_asm_bl(std::unique_ptr<asmjit::a64::Assembler>& a, int32_t bl_value) {
+static bool aarch64_asm_bl(std::shared_ptr<asmjit::a64::Assembler> a, int32_t bl_value) {
 	if (bl_value % 4 != 0) {
 		std::cout << "[发生错误] The BL instruction offset must be a multiple of 4" << std::endl;
 		return false;
@@ -99,7 +99,7 @@ static int32_t extract_aarch64_asm_b_value(uint32_t instr) {
 	return imm26 << 2;
 }
 
-static bool aarch64_asm_adr_x(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit::a64::GpX x, int32_t adr_value) {
+static bool aarch64_asm_adr_x(std::shared_ptr<asmjit::a64::Assembler> a, asmjit::a64::GpX x, int32_t adr_value) {
 	if (adr_value % 4 != 0) {
 		std::cout << "[发生错误] The ADR instruction offset must be a multiple of 4" << std::endl;
 		return false;
@@ -137,7 +137,7 @@ static bool aarch64_asm_adr_x(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit
 	return true;
 }
 
-static void aarch64_asm_mov_x(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit::a64::GpX x, uint64_t value) {
+static void aarch64_asm_mov_x(std::shared_ptr<asmjit::a64::Assembler> a, asmjit::a64::GpX x, uint64_t value) {
 	bool isInitialized = false;
 	for (int idx = 0; idx < 4; ++idx) {
 		uint16_t imm16 = (value >> (idx * 16)) & 0xFFFF;
@@ -157,7 +157,7 @@ static void aarch64_asm_mov_x(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit
 	}
 }
 
-static void aarch64_asm_mov_w(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit::a64::GpW w, uint32_t value) {
+static void aarch64_asm_mov_w(std::shared_ptr<asmjit::a64::Assembler> a, asmjit::a64::GpW w, uint32_t value) {
 	bool isInitialized = false;
 	for (int idx = 0; idx < 2; ++idx) {
 		uint16_t imm16 = (value >> (idx * 16)) & 0xFFFF;
@@ -177,13 +177,44 @@ static void aarch64_asm_mov_w(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit
 	}
 }
 
-static void aarch64_asm_safe_blr(std::unique_ptr<asmjit::a64::Assembler> &a, asmjit::a64::GpX x) {
-	a->stp(x29, x30, ptr(sp).pre(-16));
-	a->blr(x);
-	a->ldp(x29, x30, ptr(sp).post(16));
+static void aarch64_asm_set_x_data_ptr(std::shared_ptr<asmjit::a64::Assembler> a, asmjit::a64::GpX x, const std::vector<uint8_t>& data) {
+    auto align_up4 = [](size_t v) -> size_t {
+        return (v + 3) & ~size_t(3);
+    };
+
+    const size_t n_raw    = data.size();
+    const size_t n_padded = align_up4(n_raw);
+
+    std::vector<uint8_t> buf(n_padded, 0u);
+    if (!data.empty()) {
+        std::memcpy(buf.data(), data.data(), data.size());
+    }
+
+    asmjit::Label label_entry = a->newLabel();
+    a->b(label_entry);
+    int off_addr_start = a->offset();
+    a->embed(buf.data(), buf.size());
+    a->bind(label_entry);
+
+    const int off = off_addr_start - a->offset();
+    aarch64_asm_adr_x(a, x, off);
 }
 
-static bool aarch64_asm_pacia(std::unique_ptr<asmjit::a64::Assembler>& a, const asmjit::a64::GpX& reg) {
+static void aarch64_asm_set_x_cstr_ptr(std::shared_ptr<asmjit::a64::Assembler> a, asmjit::a64::GpX x, const std::string & str) {
+    std::vector<uint8_t> buf(str.size() + 1, 0u);
+    if (!str.empty()) {
+        std::memcpy(buf.data(), str.c_str(), str.size());
+    }
+    aarch64_asm_set_x_data_ptr(a, x, buf);
+}
+
+static void aarch64_asm_safe_blr(std::shared_ptr<asmjit::a64::Assembler> a, asmjit::a64::GpX x) {
+	a->stp(asmjit::a64::x29, asmjit::a64::x30, ptr(asmjit::a64::sp).pre(-16));
+	a->blr(x);
+	a->ldp(asmjit::a64::x29, asmjit::a64::x30, ptr(asmjit::a64::sp).post(16));
+}
+
+static bool aarch64_asm_pacia(std::shared_ptr<asmjit::a64::Assembler> a, const asmjit::a64::GpX& reg) {
 	uint32_t reg_n = reg.id();
 	if (reg_n > 31) {
 		std::cout << "[发生错误] Xn 寄存器编号超出范围: " << reg_n << std::endl;
@@ -194,25 +225,25 @@ static bool aarch64_asm_pacia(std::unique_ptr<asmjit::a64::Assembler>& a, const 
 	return true;
 }
 
-static bool aarch64_asm_paciasp(std::unique_ptr<asmjit::a64::Assembler>& a) {
+static bool aarch64_asm_paciasp(std::shared_ptr<asmjit::a64::Assembler> a) {
 	uint32_t instr = 0xD503233F;
 	a->embed(reinterpret_cast<const uint8_t*>(&instr), sizeof(instr));
 	return true;
 }
 
-static bool aarch64_asm_autiasp(std::unique_ptr<asmjit::a64::Assembler>& a) {
+static bool aarch64_asm_autiasp(std::shared_ptr<asmjit::a64::Assembler> a) {
 	uint32_t instr = 0xD50323BF;
 	a->embed(reinterpret_cast<const uint8_t*>(&instr), sizeof(instr));
 	return true;
 }
 
-static bool aarch64_asm_bit_c(std::unique_ptr<asmjit::a64::Assembler>& a) {
+static bool aarch64_asm_bit_c(std::shared_ptr<asmjit::a64::Assembler> a) {
 	uint32_t instr = 0xD503245F;
 	a->embed(reinterpret_cast<const uint8_t*>(&instr), sizeof(instr));
 	return true;
 }
 
-static bool aarch64_asm_bit_j(std::unique_ptr<asmjit::a64::Assembler>& a) {
+static bool aarch64_asm_bit_j(std::shared_ptr<asmjit::a64::Assembler> a) {
 	uint32_t instr = 0xD503249F;
 	a->embed(reinterpret_cast<const uint8_t*>(&instr), sizeof(instr));
 	return true;

@@ -7,7 +7,7 @@
 #include <sys/syscall.h>
 #include <sys/prctl.h>
 
-#include "kernel_root_kit_umbrella.h"
+#include "rootkit_umbrella.h"
 namespace kernel_root {
 static inline __uid_t my_getfsuid() {
     return syscall(SYS_setfsuid, (uid_t)-1);

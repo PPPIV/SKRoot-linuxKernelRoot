@@ -8,7 +8,7 @@ using namespace asmjit::a64::Predicate;
 
 #define TIF_SECCOMP 11
 
-PatchDoExecve::PatchDoExecve(const std::vector<char>& file_buf, const KernelSymbolOffset& sym) : PatchBase(file_buf) {
+PatchDoExecve::PatchDoExecve(const PatchBase& patch_base, const KernelSymbolOffset& sym) : PatchBase(patch_base) {
 	init_do_execve_param(sym);
 }
 PatchDoExecve::~PatchDoExecve() {}
@@ -48,7 +48,7 @@ int PatchDoExecve::get_need_write_cap_cnt() {
 	return get_cap_cnt();
 }
 
-size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region, size_t task_struct_offset_cred, size_t task_struct_offset_seccomp,
+size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region, size_t task_struct_cred_offset, size_t task_struct_seccomp_offset,
 	std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
 
 	size_t hook_func_start_addr = hook_func_start_region.offset;
@@ -57,6 +57,7 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 
 	int atomic_usage_len = get_cred_atomic_usage_len();
 	int securebits_padding = get_cred_securebits_padding();
+	int securebits_len = 4 + securebits_padding;
 	uint64_t cap_ability_max = get_cap_ability_max();
 	int cap_cnt = get_need_write_cap_cnt();
 
@@ -90,19 +91,19 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	a->b(CondCode::kNE, label_end);
 	a->b(label_cycle_name);
 	a->bind(label_correct);
-	get_current_task(a, x12);
-	a->ldr(x14, ptr(x12, task_struct_offset_cred));
+	get_current_to_reg(a, x12);
+	a->ldr(x14, ptr(x12, task_struct_cred_offset));
 	a->add(x14, x14, Imm(atomic_usage_len));
 	a->str(xzr, ptr(x14).post(8));
 	a->str(xzr, ptr(x14).post(8));
 	a->str(xzr, ptr(x14).post(8));
 	a->str(xzr, ptr(x14).post(8));
-	a->mov(w13, Imm(0xc));
-	a->str(w13, ptr(x14).post(4 + securebits_padding));
+	a->mov(w12, Imm(0xc));
+	a->str(w12, ptr(x14).post(securebits_len));
 	a->mov(x13, Imm(cap_ability_max));
 	a->stp(x13, x13, ptr(x14).post(16));
 	a->stp(x13, x13, ptr(x14).post(16));
-	if (cap_cnt == 5) {
+	if (cap_cnt >= 5) {
 		a->str(x13, ptr(x14).post(8));
 	}
 	if (!is_CONFIG_THREAD_INFO_IN_TASK()) {
@@ -119,7 +120,7 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 		a->bic(x14, x14, x15);
 		a->stlxr(x15, x14, ptr(x12));
 	}
-	a->str(xzr, ptr(x12, task_struct_offset_seccomp));
+	a->str(wzr, ptr(x12, task_struct_seccomp_offset));
 	a->bind(label_end);
 	aarch64_asm_b(a, (int32_t)(hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
@@ -141,8 +142,6 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	}
 	
 	vec_out_patch_bytes_data.push_back({ str_bytes, hook_func_start_addr });
-
 	patch_jump(m_doexecve_reg_param.do_execve_addr, hook_func_start_addr + sizeof(empty_root_key_buf), vec_out_patch_bytes_data);
-
 	return shellcode_size;
 }

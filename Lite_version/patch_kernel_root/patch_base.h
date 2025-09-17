@@ -7,7 +7,8 @@
 
 class PatchBase {
 public:
-	PatchBase(const std::vector<char>& file_buf);
+	PatchBase(const std::vector<char>& file_buf, size_t cred_uid_offset);
+	PatchBase(const PatchBase& other);
 	~PatchBase();
 	size_t patch_jump(size_t patch_addr, size_t jump_addr, std::vector<patch_bytes_data>& vec_out_patch_bytes_data);
 protected:
@@ -19,8 +20,9 @@ protected:
 	int get_cap_cnt();
 
 	bool is_CONFIG_THREAD_INFO_IN_TASK();
-	void get_current_task(std::unique_ptr<asmjit::a64::Assembler>& a, asmjit::a64::GpX x);
+	void get_current_to_reg(std::shared_ptr<asmjit::a64::Assembler> a, asmjit::a64::GpX x);
 
 	const std::vector<char>& m_file_buf;
 	KernelVersionParser m_kernel_ver_parser;
+	size_t m_cred_uid_offset = 0;
 };

@@ -1,2 +1,0 @@
-1.修改Build.bat第一行为ndk路径
-2.运行Build.bat

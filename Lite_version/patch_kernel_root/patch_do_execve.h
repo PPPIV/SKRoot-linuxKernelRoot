@@ -14,16 +14,15 @@ struct ExecveParam {
 class PatchDoExecve : public PatchBase
 {
 public:
-	PatchDoExecve(const std::vector<char>& file_buf, const KernelSymbolOffset &sym);
+	PatchDoExecve(const PatchBase& patch_base, const KernelSymbolOffset &sym);
 	~PatchDoExecve();
 
-	size_t patch_do_execve(const SymbolRegion& hook_func_start_region, size_t task_struct_offset_cred, size_t task_struct_offset_seccomp,
+	size_t patch_do_execve(const SymbolRegion& hook_func_start_region, size_t task_struct_cred_offset, size_t task_struct_seccomp_offset,
 		std::vector<patch_bytes_data>& vec_out_patch_bytes_data);
 
 private:
 	void init_do_execve_param(const KernelSymbolOffset& sym);
 	int get_need_write_cap_cnt();
-	bool is_thread_info_in_stack_bottom();
 
 	ExecveParam m_doexecve_reg_param = { 0 };
 };

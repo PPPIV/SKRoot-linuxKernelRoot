@@ -4,11 +4,11 @@
 using namespace asmjit;
 using namespace asmjit::a64;
 using namespace asmjit::a64::Predicate;
-PatchFreezeTask::PatchFreezeTask(const std::vector<char>& file_buf, size_t freeze_task) : PatchBase(file_buf), m_freeze_task(freeze_task) {}
+PatchFreezeTask::PatchFreezeTask(const PatchBase& patch_base, size_t freeze_task) : PatchBase(patch_base), m_freeze_task(freeze_task) {}
 
 PatchFreezeTask::~PatchFreezeTask() {}
 
-size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_region, size_t task_struct_offset_cred,
+size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_region, size_t task_struct_cred_offset,
 	std::vector<patch_bytes_data>& vec_out_patch_bytes_data) {
 	size_t hook_func_start_addr = hook_func_start_region.offset; 
 	if (hook_func_start_addr == 0) { return 0; }
@@ -17,12 +17,10 @@ size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_re
 	int cred_euid_start_pos = get_cred_euid_offset();
 
 	size_t hook_jump_back_addr = m_freeze_task + 4;
-
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	Label label_end = a->newLabel();
-
-	a->ldr(x11, ptr(x0, task_struct_offset_cred));
+	a->ldr(x11, ptr(x0, task_struct_cred_offset));
 	a->cbz(x11, label_end);
 	a->ldr(w12, ptr(x11, cred_euid_start_pos));
 	a->cbnz(w12, label_end);
@@ -30,7 +28,6 @@ size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_re
 	a->ret(x30);
 	a->bind(label_end);
 	a->mov(x0, x0);
-
 	aarch64_asm_b(a, (int32_t)(hook_jump_back_addr - (hook_func_start_addr + a->offset())));
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 
@@ -40,7 +37,6 @@ size_t PatchFreezeTask::patch_freeze_task(const SymbolRegion& hook_func_start_re
 	}
 	std::string str_bytes = bytes2hex((const unsigned char*)bytes.data(), bytes.size());
 	size_t shellcode_size = str_bytes.length() / 2;
-
 	char hookOrigCmd[4] = { 0 };
 	memcpy(&hookOrigCmd, (void*)((size_t)&m_file_buf[0] + m_freeze_task), sizeof(hookOrigCmd));
 	std::string strHookOrigCmd = bytes2hex((const unsigned char*)hookOrigCmd, sizeof(hookOrigCmd));
