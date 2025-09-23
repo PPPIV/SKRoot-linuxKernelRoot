@@ -3,7 +3,7 @@
 
 namespace kernel_root {
 
-std::string get_su_hide_folder_path_string(const char* str_root_key);
+std::string get_hide_dir_path(const char* str_root_key);
 
 /***************************************************************************
  * 安装 su（超级用户）环境

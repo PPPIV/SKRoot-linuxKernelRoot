@@ -5,7 +5,7 @@
 #include "rootkit_maps_helper.h"
 #include "rootkit_upx_helper.h"
 #include "rootkit_random.h"
-#include "rootkit_file_replace_string.h"
+#include "common/file_replace_string.h"
 #include "lib_root_server/lib_root_server_inline.h"
 #include "lib_su_env/lib_su_env_inline.h"
 #include "lib_su_env/lib_su_env_data.h"
@@ -83,9 +83,7 @@ namespace {
 
 	static ssize_t _internal_parasite_implant_app(const char* str_root_key, const char* target_pid_cmdline,
 		const char* original_so_full_path, const char* implant_so_full_path) {
-		if (kernel_root::get_root(str_root_key) != ERR_NONE) {
-			return ERR_NO_ROOT;
-		}
+		RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
 		if(!std::filesystem::exists(original_so_full_path)) {
 			return ERR_NOT_EXIST_ORIGINAL_FILE;
 		}
@@ -117,9 +115,7 @@ namespace {
 
 static ssize_t unsafe_parasite_precheck_app(const char* str_root_key, const char* target_pid_cmdline,
  std::map<std::string, app_so_status> &output_so_full_path) {
-	if (kernel_root::get_root(str_root_key) != ERR_NONE) {
-		return ERR_NO_ROOT;
-	}
+	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
 	std::string app_path = get_app_directory(target_pid_cmdline);
 	if(app_path.empty()) {
 		return ERR_APP_DIR;
@@ -248,12 +244,9 @@ static ssize_t unsafe_parasite_implant_app(const char* str_root_key, const char*
 	char lib_name[20] = {0};
     generate_lib_name(lib_name);
 	std::string implant_so_full_path = folder_path  + "/" + lib_name;
-	if (kernel_root::get_root(str_root_key) != ERR_NONE) {
-		return ERR_NO_ROOT;
-	}
+	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
 	remove(implant_so_full_path.c_str());
-	ssize_t err = write_root_server_so_file(str_root_key, implant_so_full_path.c_str());
-	RETURN_ON_ERROR(err);
+	RETURN_ON_ERROR(write_root_server_so_file(str_root_key, implant_so_full_path.c_str()));
 	return _internal_parasite_implant_app(str_root_key, target_pid_cmdline, original_so_full_path, implant_so_full_path.c_str());
 }
 
@@ -315,12 +308,9 @@ static ssize_t unsafe_parasite_implant_su_env(const char* str_root_key, const ch
 	char lib_name[20] = {0};
     generate_lib_name(lib_name);
 	std::string implant_so_full_path = folder_path  + "/" + lib_name;
-	if (kernel_root::get_root(str_root_key) != ERR_NONE) {
-		return ERR_NO_ROOT;
-	}
+	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
 	remove(implant_so_full_path.c_str());
-	ssize_t err = write_su_env_so_file(str_root_key, implant_so_full_path.c_str(), su_folder);
-	RETURN_ON_ERROR(err);
+	RETURN_ON_ERROR(write_su_env_so_file(str_root_key, implant_so_full_path.c_str(), su_folder));
 	return _internal_parasite_implant_app(str_root_key, target_pid_cmdline, original_so_full_path, implant_so_full_path.c_str());
 }
 

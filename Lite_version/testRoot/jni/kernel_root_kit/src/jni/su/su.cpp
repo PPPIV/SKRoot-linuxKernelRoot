@@ -2,7 +2,6 @@
 #include "su_log.h"
 #include "su_inline.h"
 #include "rootkit_umbrella.h"
-#include <filesystem>
 
 namespace {
 	/*

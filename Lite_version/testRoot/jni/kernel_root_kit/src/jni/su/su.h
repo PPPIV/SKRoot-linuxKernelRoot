@@ -1,37 +1,12 @@
 ﻿#pragma once
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include <pwd.h>
-#include <dirent.h>
-#include <time.h>
-#include <iostream>
-#include <memory>
-#include <vector>
-#include <map>
-
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/wait.h>
-#include <sys/select.h>
-#include <sys/time.h>
-#include <sys/prctl.h>
-#include <sys/types.h>
-#include <sys/mount.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-
-#include <fcntl.h>
 #include <getopt.h>
-#include <stdarg.h>
-#include <pthread.h>
-#include <sched.h>
-#include <termios.h>
-#include <signal.h>
-#include <libgen.h>
-#include <poll.h>
+#include <sys/types.h>
+#include <string>
 
 #define DEFAULT_SHELL "/system/bin/sh"
 

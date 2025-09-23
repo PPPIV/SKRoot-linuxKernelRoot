@@ -20,9 +20,7 @@ namespace kernel_root {
 		int err = ERR_NONE;
 		if (file_path == NULL || strlen(file_path) == 0) { return ERR_PARAM; }
 
-		if (kernel_root::get_root(str_root_key) != ERR_NONE) {
-			return ERR_NO_ROOT;
-		}
+		RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
 
 		char *buf1 = strdup(file_path);
 		size_t argc = 0;

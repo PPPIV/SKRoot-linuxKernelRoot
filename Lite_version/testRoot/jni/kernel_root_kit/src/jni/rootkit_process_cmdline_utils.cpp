@@ -11,9 +11,7 @@
 namespace kernel_root {
 static ssize_t unsafe_find_all_cmdline_process(const char* str_root_key, const char* target_cmdline, std::set<pid_t> & out, bool compare_full_agrc) {
 	out.clear();
-	if (kernel_root::get_root(str_root_key) != ERR_NONE) {
-		return ERR_NO_ROOT;
-	}
+	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
 
 	DIR* dir = opendir("/proc");
 	if (dir == NULL) {
@@ -113,9 +111,7 @@ ssize_t find_all_cmdline_process(const char* str_root_key, const char* target_cm
 
 static ssize_t unsafe_wait_and_find_cmdline_process(const char* str_root_key, const char* target_cmdline, int timeout, pid_t & pid, bool compare_full_agrc) {
 	pid = 0;
-	if (kernel_root::get_root(str_root_key) != ERR_NONE) {
-		return ERR_NO_ROOT;
-	}
+	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
 	clock_t start = clock();
 	while (1) {
 		sleep(0);
@@ -236,9 +232,7 @@ static ssize_t unsafe_get_all_cmdline_process(const char* str_root_key, std::map
 
 	struct dirent * entry;
 	pid_map.clear();
-	if (kernel_root::get_root(str_root_key) != ERR_NONE) {
-		return ERR_NO_ROOT;
-	}
+	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
 	dir = opendir("/proc");
 	if (dir == NULL) {
 		return ERR_OPEN_DIR;

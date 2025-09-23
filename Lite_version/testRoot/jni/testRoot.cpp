@@ -65,7 +65,7 @@ void test_su_env_temp_inject(const char* target_pid_cmdline) {
 	}
 
 	// 1.获取su_xxx隐藏目录
-	std::string su_hide_path = kernel_root::get_su_hide_folder_path_string(ROOT_KEY);
+	std::string su_hide_path = kernel_root::get_hide_dir_path(ROOT_KEY);
 	printf("su_hide_path ret val:%s\n", su_hide_path.c_str());
 	if (su_hide_path.empty()) { return; }
 
@@ -95,7 +95,7 @@ void test_su_env_forever_inject(const char* target_pid_cmdline) {
 		return;
 	}
 	// 1.获取su_xxx隐藏目录
-	std::string su_hide_path = kernel_root::get_su_hide_folder_path_string(ROOT_KEY);
+	std::string su_hide_path = kernel_root::get_hide_dir_path(ROOT_KEY);
 	printf("su_hide_path ret val:%s\n", su_hide_path.c_str());
 	if (su_hide_path.empty()) { return; }
 
@@ -186,7 +186,7 @@ void test_implant_app(const char* target_pid_cmdline) {
 	}
 
 	// 1.获取su_xxx隐藏目录
-	std::string su_hide_path = kernel_root::get_su_hide_folder_path_string(ROOT_KEY);
+	std::string su_hide_path = kernel_root::get_hide_dir_path(ROOT_KEY);
 	printf("test_implant_app su_hide_path ret val:%s\n", su_hide_path.c_str());
 	if (su_hide_path.empty()) { return; }
 	std::string su_hide_full_path = su_hide_path + "/su";

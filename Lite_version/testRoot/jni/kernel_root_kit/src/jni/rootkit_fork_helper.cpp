@@ -355,6 +355,4 @@ bool read_map_s_i_from_child(fork_pipe_info & finfo, std::map<std::string, int> 
     free(data);
     return true;
 }
-
-
 }

@@ -215,9 +215,7 @@ _ret:	return ret;
 
 static ssize_t unsafe_inject_process_env64_PATH_wrapper(const char* str_root_key, int target_pid, const char* add_path,
 	api_offset_read_mode api_offset_mode /* = api_offset_read_mode::all*/) {
-	if (kernel_root::get_root(str_root_key) != ERR_NONE) {
-		return ERR_NO_ROOT;
-	}
+	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
 
 	/*
 	安卓:
@@ -273,13 +271,12 @@ static ssize_t safe_inject_process_env64_PATH_wrapper(const char* str_root_key, 
 	fork_pipe_info finfo;
 	out_err = ERR_NONE;
 	if(fork_pipe_child_process(finfo)) {
-		if (kernel_root::get_root(str_root_key) == 0) {
+		out_err = kernel_root::get_root(str_root_key);
+		if (out_err == ERR_NONE) {
 			libc_path = find_process_libc_so_path(target_pid);
 			if (libc_path.empty()) {
 				out_err = ERR_LIBC_PATH_EMPTY;
 			}
-		} else {
-			out_err = ERR_NO_ROOT;
 		}
 		write_errcode_from_child(finfo, out_err);
 		write_string_from_child(finfo, libc_path);
@@ -331,10 +328,9 @@ static ssize_t safe_inject_process_env64_PATH_wrapper(const char* str_root_key, 
 	finfo.reset();
 	out_err = ERR_NONE;
 	if(fork_pipe_child_process(finfo)) {
-		if (kernel_root::get_root(str_root_key) == 0) {
+		out_err = kernel_root::get_root(str_root_key);
+		if (out_err == ERR_NONE) {
 			out_err = unsafe_inject_process_env64_PATH(target_pid, libc_path.c_str(), p_mmap_offset, p_munmap_offset, p_getenv_offset, p_setenv_offset, add_path);
-		} else {
-			out_err = ERR_NO_ROOT;
 		}
 		write_errcode_from_child(finfo, out_err);
 		_exit(0);
@@ -358,12 +354,9 @@ ssize_t inject_process_env64_PATH_wrapper(const char* str_root_key, int target_p
 
 static ssize_t unsafe_kill_process(const char* str_root_key, pid_t pid) {
 	ssize_t err = ERR_NONE;
-	if (kernel_root::get_root(str_root_key) == 0) {
-		if(kill(pid, SIGKILL) != 0) {
-			err = ERR_KILL;
-		}
-	} else {
-		err = ERR_NO_ROOT;
+	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
+	if(kill(pid, SIGKILL) != 0) {
+		err = ERR_KILL;
 	}
 	return err;
 }

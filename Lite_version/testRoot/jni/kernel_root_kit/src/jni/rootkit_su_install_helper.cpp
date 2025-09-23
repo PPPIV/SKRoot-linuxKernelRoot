@@ -12,10 +12,11 @@
 
 #include "su/su_inline.h"
 #include "rootkit_umbrella.h"
-#include "rootkit_su_hide_folder.h"
-#include "rootkit_file_replace_string.h"
-#include "rootkit_file_selinux_utils.h"
+#include "rootkit_su_hide_dir.h"
+#include "common/file_replace_string.h"
+#include "common/file_utils.h"
 
+using namespace file_utils;
 namespace kernel_root {
 
 #ifdef SU_EXEC_DATA
@@ -41,20 +42,18 @@ static bool write_su_exec(const char* str_root_key, const char* target_path) {
 }
 
 static std::string unsafe_install_su(const char* str_root_key, ssize_t& err) {
-	if (kernel_root::get_root(str_root_key) != ERR_NONE) {
-		err = ERR_NO_ROOT;
+	err = kernel_root::get_root(str_root_key);
+	if (err != ERR_NONE) {
 		return {};
 	}
-	std::string su_hide_full_path = get_su_hide_folder_path_string(str_root_key) + "/su";
-	if(!std::filesystem::exists(su_hide_full_path.c_str())) {
-		if (!write_su_exec(str_root_key, su_hide_full_path.c_str())) {
-			err = ERR_WRITE_SU_EXEC;
-			return {};
-		}
-		if (!kernel_root::set_file_allow_access_mode(su_hide_full_path)) {
-			err = ERR_SET_FILE_ALLOW_ACCESS;
-			return {};
-		}
+	std::string su_hide_full_path = get_hide_dir_path(str_root_key) + "/su";
+	if (!write_su_exec(str_root_key, su_hide_full_path.c_str())) {
+		err = ERR_WRITE_SU_EXEC;
+		return {};
+	}
+	if (!set_file_selinux_access_mode(su_hide_full_path, SelinuxFileFlag::SELINUX_SYSTEM_FILE)) {
+		err = ERR_SET_FILE_SELINUX;
+		return {};
 	}
 	err = ERR_NONE;
 	return su_hide_full_path;
@@ -85,7 +84,7 @@ static std::string safe_install_su(const char* str_root_key, ssize_t& err) {
 }
 
 std::string install_su(const char* str_root_key, ssize_t& err) {
-	err = create_su_hide_folder(str_root_key);
+	err = create_su_hide_dir(str_root_key);
 	if(err != ERR_NONE) {
 		return {};
 	}
@@ -94,7 +93,7 @@ std::string install_su(const char* str_root_key, ssize_t& err) {
 #endif
 
 ssize_t uninstall_su(const char* str_root_key) {
-	return del_su_hide_folder(str_root_key);
+	return del_su_hide_dir(str_root_key);
 }
 
 }

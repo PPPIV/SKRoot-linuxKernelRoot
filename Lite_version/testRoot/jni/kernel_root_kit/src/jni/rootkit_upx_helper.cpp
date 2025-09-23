@@ -26,9 +26,7 @@ static bool write_upx_exec(const char* target_path) {
 }
 
 static ssize_t unsafe_upx_file(const char* str_root_key, const char* file_path) {
-    if (kernel_root::get_root(str_root_key) != ERR_NONE) {
-        return ERR_NO_ROOT;
-    }
+	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
 	std::filesystem::path path(file_path);
 	std::string folder_path = path.parent_path().string();
 	std::string upx_full_path = folder_path  + "/upx";
@@ -46,9 +44,9 @@ static ssize_t unsafe_upx_file(const char* str_root_key, const char* file_path) 
     int random_number = dist(gen);
 	std::stringstream sstr;
 	sstr << " -" << random_number << " -o " << file_path_upx << " " << file_path;
-	ssize_t err = kernel_root::root_exec_process(str_root_key, sstr.str().c_str());
+	BREAK_ON_ERROR(kernel_root::root_exec_process(str_root_key, sstr.str().c_str()));
+	ssize_t err = ERR_NONE;
 	do {
-		BREAK_ON_ERROR(err);
 		if(!std::filesystem::exists(file_path_upx)) {
 			err = ERR_UPX;
 			break;
@@ -59,7 +57,7 @@ static ssize_t unsafe_upx_file(const char* str_root_key, const char* file_path) 
 	} while(0);
 	remove(upx_full_path.c_str());
 	remove(file_path_upx.c_str());
-    return ERR_NONE;
+    return err;
 }
 
 static ssize_t safe_upx_file(const char* str_root_key, const char* file_path) {

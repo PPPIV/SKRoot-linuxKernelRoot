@@ -36,10 +36,7 @@ std::string run_root_cmd(const char* str_root_key, const char* cmd, ssize_t & er
 	if(fork_pipe_child_process(finfo)) {
 		err = ERR_NONE;
 		do {
-			if (get_root(str_root_key) != ERR_NONE) {
-				err = ERR_NO_ROOT;
-				break;
-			}
+			BREAK_ON_ERROR(get_root(str_root_key));
 			FILE * fp = popen(cmd_add_err_info.c_str(), "r");
 			if(!fp) {
 				err = ERR_POPEN;
