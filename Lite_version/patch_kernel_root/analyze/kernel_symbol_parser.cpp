@@ -32,10 +32,17 @@ bool KernelSymbolParser::init_kallsyms_lookup_name() {
 	std::cout << "Find the current Linux kernel version: " << current_version << std::endl;
 	std::cout << std::endl;
 
-	if (m_kernel_ver_parser.is_kernel_version_less("4.6.0")) {
+	if (m_kernel_ver_parser.is_kernel_version_less("4.4.0")) { // android special
 		if (!m_kallsyms_lookup_name.init()) {
 			std::cout << "Failed to analyze kernel kallsyms lookup name information" << std::endl;
 			return false;
+		}
+	} else if (m_kernel_ver_parser.is_kernel_version_less("4.6.0")) {
+		if (!m_kallsyms_lookup_name.init()) {
+			if (!m_kallsyms_lookup_name_4_6_0.init()) {
+				std::cout << "Failed to analyze kernel kallsyms lookup name information" << std::endl;
+				return false;
+			}
 		}
 	} else if (m_kernel_ver_parser.is_kernel_version_less("6.1.42")) {
 		if (!m_kallsyms_lookup_name_4_6_0.init()) {
