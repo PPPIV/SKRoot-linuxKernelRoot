@@ -246,7 +246,7 @@ int main(int argc, char* argv[]) {
 		std::cout << std::endl;
 	}
 	std::string write_kernel_key = str_root_key;
-	write_kernel_key.pop_back();
+	write_kernel_key.erase(write_kernel_key.size() - 1);
 	patch_data(file_buf, pr.root_key_start, (void*)write_kernel_key.c_str(), write_kernel_key.length() + 1, vec_patch_bytes_data);
 
 	std::cout << "#获取ROOT权限的密匙：" << str_root_key.c_str() << std::endl << std::endl;

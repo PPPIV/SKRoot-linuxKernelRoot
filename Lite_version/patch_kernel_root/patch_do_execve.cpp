@@ -98,8 +98,8 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	a->str(xzr, ptr(x14).post(8));
 	a->str(xzr, ptr(x14).post(8));
 	a->str(xzr, ptr(x14).post(8));
-	a->mov(w12, Imm(0xc));
-	a->str(w12, ptr(x14).post(securebits_len));
+	a->mov(w13, Imm(0xc));
+	a->str(w13, ptr(x14).post(securebits_len));
 	a->mov(x13, Imm(cap_ability_max));
 	a->stp(x13, x13, ptr(x14).post(16));
 	a->stp(x13, x13, ptr(x14).post(16));

@@ -5,6 +5,17 @@ using namespace asmjit;
 using namespace asmjit::a64;
 using namespace asmjit::a64::Predicate;
 
+struct cred_uid_info {
+	uint32_t uid; /* real UID of the task */
+	uint32_t gid; /* real GID of the task */
+	uint32_t suid; /* saved UID of the task */
+	uint32_t sgid; /* saved GID of the task */
+	uint32_t euid; /* effective UID of the task */
+	uint32_t egid; /* effective GID of the task */
+	uint32_t fsuid; /* UID for VFS ops */
+	uint32_t fsgid; /* GID for VFS ops */
+};
+
 PatchBase::PatchBase(const std::vector<char>& file_buf, size_t cred_uid_offset) : 
 	m_file_buf(file_buf), m_kernel_ver_parser(file_buf), m_cred_uid_offset(cred_uid_offset) {}
 
@@ -20,27 +31,15 @@ int PatchBase::get_cred_atomic_usage_len() {
 	return m_cred_uid_offset;
 }
 
+
 int PatchBase::get_cred_uid_region_len() {
-	const int uid = 4;
-	const int gid = 4;
-	const int suid = 4;
-	const int sgid = 4;
-	const int euid = 4;
-	const int egid = 4;
-	const int fsuid = 4;
-	const int fsgid = 4;
-	return uid + gid + suid + sgid + euid + egid + fsuid + fsgid;
+	return sizeof(cred_uid_info);
 }
 
 int PatchBase::get_cred_euid_offset() {
-	int start_pos = get_cred_atomic_usage_len();
-	const int uid = 4;
-	const int gid = 4;
-	const int suid = 4;
-	const int sgid = 4;
-	start_pos += uid + gid + suid + sgid;
-	return start_pos;
+	return get_cred_atomic_usage_len() + offsetof(cred_uid_info, euid);
 }
+
 
 int PatchBase::get_cred_securebits_padding() {
 	if (get_cred_atomic_usage_len() == 8) {
