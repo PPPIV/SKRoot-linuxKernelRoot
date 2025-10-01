@@ -1,11 +1,13 @@
 ﻿#include <unistd.h>
 #include <iostream>
 #include <string>
+#include <random>
+#include <array>
+#include <cerrno>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 
@@ -20,6 +22,31 @@
 char ROOT_KEY[256] = {0};
 
 extern char** environ;
+
+static std::string make_rand_progname() {
+    static constexpr std::string_view kChars =
+        "0123456789"
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        ".";
+    thread_local std::mt19937 rng{[]{
+        std::random_device rd;
+        return std::mt19937{static_cast<uint32_t>(
+            (static_cast<uint64_t>(rd()) << 32) ^ static_cast<uint32_t>(::getpid()) ^ static_cast<uint32_t>(::time(nullptr))
+        )};
+    }()};
+
+    std::uniform_int_distribution<int> len_dist(1, 16);
+    std::uniform_int_distribution<size_t> idx_dist(0, kChars.size() - 1);
+
+    const int len = len_dist(rng);
+    std::string s;
+    s.resize(static_cast<size_t>(len));
+    for (int i = 0; i < len; ++i) {
+        s[static_cast<size_t>(i)] = kChars[idx_dist(rng)];
+    }
+    return s;
+}
 
 static int fexecve_compat(int fd, char* const argv[], char* const envp[]) {
 #ifdef __NR_execveat
@@ -59,8 +86,9 @@ static int exec_from_blob_noargs(const void* blob, size_t len) {
     int fd = memfd_from_blob(blob, len);
     if (fd < 0) return -1;
 
-    char* argv[] = { (char*)"web_server", nullptr };
-    my_fexecve(fd, argv, environ);  // 成功则不返回
+	std::string prog = make_rand_progname();
+    char* argv[] = { prog.data(), nullptr };
+    my_fexecve(fd, argv, environ);
     int err = errno;
     close(fd);
     return err;
