@@ -38,7 +38,7 @@ static bool is_elf64_file(int fd) {
 	return false;
 }
 
-static ssize_t read_elf64_file_symbol_addr(const char* so_path, std::map<std::string, uint64_t>& func_symbol_map) {
+static KRootErr read_elf64_file_symbol_addr(const char* so_path, std::map<std::string, uint64_t>& func_symbol_map) {
 	int fd;
 	char* mod;
 	unsigned int size, i, j, shn, n;
@@ -49,12 +49,12 @@ static ssize_t read_elf64_file_symbol_addr(const char* so_path, std::map<std::st
 
 	fd = open(so_path, O_RDONLY);
 	if (fd < 0) {
-		return ERR_OPEN_FILE;
+		return KRootErr::ERR_OPEN_FILE;
 	}
 	lseek(fd, 0L, SEEK_SET);
 	if (!is_elf64_file(fd)) {
 		close(fd);
-		return ERR_NOT_ELF64_FILE;
+		return KRootErr::ERR_NOT_ELF64_FILE;
 	}
 	size = lseek(fd, 0L, SEEK_END);
 	mod = (char*)mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
@@ -92,14 +92,14 @@ static ssize_t read_elf64_file_symbol_addr(const char* so_path, std::map<std::st
 	}
 	munmap(mod, size);
 	close(fd);
-	return ERR_NONE;
+	return KRootErr::ERR_NONE;
 }
 
-ssize_t find_mem_elf64_symbol_address(const char *so_path, std::map<std::string, uint64_t>& func_symbol_map) {
+KRootErr find_mem_elf64_symbol_address(const char *so_path, std::map<std::string, uint64_t>& func_symbol_map) {
     void* p_so_addr = get_module_base(-1, so_path);
 	void* p_so = dlopen(so_path, RTLD_NOW | RTLD_GLOBAL);
 	if (!p_so || !p_so_addr) {
-		return ERR_DLOPEN_FILE;
+		return KRootErr::ERR_DLOPEN_FILE;
 	}
 	for(auto iter = func_symbol_map.begin(); iter != func_symbol_map.end(); iter++) {
 		void* pfunc = dlsym(p_so, iter->first.c_str());
@@ -108,7 +108,7 @@ ssize_t find_mem_elf64_symbol_address(const char *so_path, std::map<std::string,
 		}
 	}
 	dlclose(p_so);
-	return ERR_NONE;
+	return KRootErr::ERR_NONE;
 }
 
 }

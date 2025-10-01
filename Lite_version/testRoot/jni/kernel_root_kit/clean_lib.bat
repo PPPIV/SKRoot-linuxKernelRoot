@@ -3,8 +3,12 @@ cd /d "%~dp0"
 
 set "root_path=%~dp0"
 
-if exist "%root_path%src\jni\lib_root_server\lib_root_server_data.h" (
-    del "%root_path%src\jni\lib_root_server\lib_root_server_data.h"
+if exist "%root_path%src\jni\web_server\web_server_exec_data.h" (
+    del "%root_path%src\jni\web_server\web_server_exec_data.h"
+)
+
+if exist "%root_path%src\jni\lib_web_server_loader\lib_web_server_loader_data.h" (
+    del "%root_path%src\jni\lib_web_server_loader\lib_web_server_loader_data.h"
 )
 
 if exist "%root_path%src\jni\su\su_exec_data.h" (
@@ -15,12 +19,12 @@ if exist "%root_path%src\jni\lib_su_env\lib_su_env_data.h" (
     del "%root_path%src\jni\lib_su_env\lib_su_env_data.h"
 )
 
-if exist "%root_path%src\jni\3rdparty\upx\upx_exec_data.h" (
-    del "%root_path%src\jni\3rdparty\upx\upx_exec_data.h"
+if exist "%root_path%src\jni\lib_web_server_loader\res.h" (
+    del "%root_path%src\jni\lib_web_server_loader\res.h"
 )
 
-if exist "%root_path%src\jni\lib_root_server\res.h" (
-    del "%root_path%src\jni\lib_root_server\res.h"
+if exist "%root_path%src\jni\web_server\res.h" (
+    del "%root_path%src\jni\web_server\res.h"
 )
 
 if exist "%root_path%src\jni\su\res.h" (
@@ -31,17 +35,22 @@ if exist "%root_path%src\jni\lib_su_env\res.h" (
     del "%root_path%src\jni\lib_su_env\res.h"
 )
 
-if exist "%root_path%src\jni\3rdparty\upx\res.h" (
-    del "%root_path%src\jni\3rdparty\upx\res.h"
+if exist "%root_path%src\jni\lib_web_server_loader\index.gz.bin" (
+    del "%root_path%src\jni\lib_web_server_loader\index.gz.bin"
 )
 
-if exist "%root_path%src\jni\lib_root_server\index.gz.bin" (
-    del "%root_path%src\jni\lib_root_server\index.gz.bin"
+if exist "%root_path%src\jni\lib_web_server_loader\index_html_gz_data.h" (
+    del "%root_path%src\jni\lib_web_server_loader\index_html_gz_data.h"
 )
 
-if exist "%root_path%src\jni\lib_root_server\index_html_gz_data.h" (
-    del "%root_path%src\jni\lib_root_server\index_html_gz_data.h"
+if exist "%root_path%src\jni\web_server\index.gz.bin" (
+    del "%root_path%src\jni\web_server\index.gz.bin"
 )
+
+if exist "%root_path%src\jni\web_server\index_html_gz_data.h" (
+    del "%root_path%src\jni\web_server\index_html_gz_data.h"
+)
+
 
 if exist "%root_path%\src\obj" (
     rmdir /S /Q "%root_path%\src\obj"
@@ -67,10 +76,18 @@ if exist "%root_path%\src\jni\lib_su_env\obj" (
     rmdir /S /Q "%root_path%\src\jni\lib_su_env\obj"
 ) 
 
-if exist "%root_path%\src\jni\lib_root_server\libs" (
-    rmdir /S /Q "%root_path%\src\jni\lib_root_server\libs"
+if exist "%root_path%\src\jni\lib_web_server_loader\libs" (
+    rmdir /S /Q "%root_path%\src\jni\lib_web_server_loader\libs"
 )
 
-if exist "%root_path%\src\jni\lib_root_server\obj" (
-    rmdir /S /Q "%root_path%\src\jni\lib_root_server\obj"
+if exist "%root_path%\src\jni\lib_web_server_loader\obj" (
+    rmdir /S /Q "%root_path%\src\jni\lib_web_server_loader\obj"
+) 
+
+if exist "%root_path%\src\jni\web_server\libs" (
+    rmdir /S /Q "%root_path%\src\jni\web_server\libs"
+)
+
+if exist "%root_path%\src\jni\web_server\obj" (
+    rmdir /S /Q "%root_path%\src\jni\web_server\obj"
 ) 

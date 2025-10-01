@@ -12,6 +12,8 @@
 
 #include "su/su_inline.h"
 #include "rootkit_umbrella.h"
+#include "rootkit_path.h"
+#include "rootkit_fork_helper.h"
 #include "rootkit_su_hide_dir.h"
 #include "common/file_replace_string.h"
 #include "common/file_utils.h"
@@ -23,13 +25,13 @@ namespace kernel_root {
 static bool write_su_exec(const char* str_root_key, const char* target_path) {
 	std::shared_ptr<char> sp_su_exec_file_data(new (std::nothrow) char[su_exec_file_size], std::default_delete<char[]>());
 	if(!sp_su_exec_file_data) {
-		return ERR_NO_MEM;
+		return false;
 	}
 	memcpy(sp_su_exec_file_data.get(), reinterpret_cast<char*>(su_exec_data), su_exec_file_size);
 
 	// write root key
 	if(!replace_feature_string_in_buf(const_cast<char*>(static_inline_su_rootkey), sizeof(static_inline_su_rootkey), str_root_key, sp_su_exec_file_data.get(), su_exec_file_size)) {
-		return ERR_WRITE_ROOT_SERVER;
+		return false;
 	}
 
     std::ofstream file(std::string(target_path), std::ios::binary | std::ios::out);
@@ -41,58 +43,49 @@ static bool write_su_exec(const char* str_root_key, const char* target_path) {
     return true;
 }
 
-static std::string unsafe_install_su(const char* str_root_key, ssize_t& err) {
-	err = kernel_root::get_root(str_root_key);
-	if (err != ERR_NONE) {
-		return {};
-	}
-	std::string su_hide_full_path = get_hide_dir_path(str_root_key) + "/su";
-	if (!write_su_exec(str_root_key, su_hide_full_path.c_str())) {
-		err = ERR_WRITE_SU_EXEC;
-		return {};
-	}
-	if (!set_file_selinux_access_mode(su_hide_full_path, SelinuxFileFlag::SELINUX_SYSTEM_FILE)) {
-		err = ERR_SET_FILE_SELINUX;
-		return {};
-	}
-	err = ERR_NONE;
-	return su_hide_full_path;
+static KRootErr unsafe_install_su(const char* str_root_key, std::string& out_su_full_path) {
+	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
+	std::string su_full_path = kernel_root::get_su_hide_path(str_root_key);
+	if (!write_su_exec(str_root_key, su_full_path.c_str())) return KRootErr::ERR_WRITE_SU_EXEC;
+	if (!set_file_selinux_access_mode(su_full_path.c_str(), SelinuxFileFlag::SELINUX_SYSTEM_FILE)) return KRootErr::ERR_SET_FILE_SELINUX;
+	
+	out_su_full_path = su_full_path;
+	return KRootErr::ERR_NONE;
 }
 
-static std::string safe_install_su(const char* str_root_key, ssize_t& err) {
-	std::string su_hide_full_path;
+static KRootErr safe_install_su(const char* str_root_key, std::string& out_su_full_path) {
+	out_su_full_path.clear();
 	fork_pipe_info finfo;
 	if(fork_pipe_child_process(finfo)) {
-		ssize_t err;
-		su_hide_full_path = unsafe_install_su(str_root_key, err);
+		KRootErr err = unsafe_install_su(str_root_key, out_su_full_path);
 		write_errcode_from_child(finfo, err);
-		write_string_from_child(finfo, su_hide_full_path);
+		write_string_from_child(finfo, out_su_full_path);
 		_exit(0);
-		return 0;
+		return KRootErr::ERR_NONE;
 	}
-	err = ERR_NONE;
+	KRootErr err = KRootErr::ERR_NONE;
 	if(!is_fork_child_process_work_finished(finfo)) {
-		err = ERR_WAIT_FORK_CHILD;
+		err = KRootErr::ERR_WAIT_FORK_CHILD;
 	} else {
 		if(!read_errcode_from_child(finfo, err)) {
-			err = ERR_READ_CHILD_ERRCODE;
-		} else if(!read_string_from_child(finfo, su_hide_full_path)) {
-			err = ERR_READ_CHILD_STRING;
+			err = KRootErr::ERR_READ_CHILD_ERRCODE;
+		} else if(!read_string_from_child(finfo, out_su_full_path)) {
+			err = KRootErr::ERR_READ_CHILD_STRING;
 		}
 	}
-	return su_hide_full_path;
+	return err;
 }
 
-std::string install_su(const char* str_root_key, ssize_t& err) {
-	err = create_su_hide_dir(str_root_key);
-	if(err != ERR_NONE) {
-		return {};
-	}
-	return safe_install_su(str_root_key, err);
+KRootErr install_su_with_cb(const char* str_root_key, void (*cb)(const char* su_full_path)) {
+	RETURN_ON_ERROR(create_su_hide_dir(str_root_key));
+	std::string su_path;
+	RETURN_ON_ERROR(safe_install_su(str_root_key, su_path));
+	cb(su_path.c_str());
+	return KRootErr::ERR_NONE;
 }
 #endif
 
-ssize_t uninstall_su(const char* str_root_key) {
+KRootErr uninstall_su(const char* str_root_key) {
 	return del_su_hide_dir(str_root_key);
 }
 

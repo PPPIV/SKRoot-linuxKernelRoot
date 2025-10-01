@@ -17,7 +17,7 @@ namespace kernel_root {
  *                         false:只匹配进程cmdline的第一个参数（程序名）
  * 返回: ERR_NONE 表示成功；其余为错误码
 ***************************************************************************/
-ssize_t find_all_cmdline_process(const char* str_root_key, const char* target_cmdline, std::set<pid_t> & out, bool compare_full_agrc = false);
+KRootErr find_all_cmdline_process(const char* str_root_key, const char* target_cmdline, std::set<pid_t> & out, bool compare_full_agrc = false);
 
 /***************************************************************************
  * 等待并查找符合指定 cmdline 字符串的进程
@@ -31,7 +31,7 @@ ssize_t find_all_cmdline_process(const char* str_root_key, const char* target_cm
  *                         false:只匹配进程cmdline的第一个参数（程序名）
  * 返回: ERR_NONE 表示成功；其余为错误码
  ***************************************************************************/
-ssize_t wait_and_find_cmdline_process(const char* str_root_key, const char* target_cmdline, int timeout, pid_t & pid, bool compare_full_agrc = false);
+KRootErr wait_and_find_cmdline_process(const char* str_root_key, const char* target_cmdline, int timeout, pid_t & pid, bool compare_full_agrc = false);
 
 /***************************************************************************
  * 获取所有进程的 PID 与 cmdline 映射
@@ -43,5 +43,5 @@ ssize_t wait_and_find_cmdline_process(const char* str_root_key, const char* targ
  *                         false — 只保存第一个参数
  * 返回: ERR_NONE 表示成功；其余为错误码
  ***************************************************************************/
-ssize_t get_all_cmdline_process(const char* str_root_key, std::map<pid_t, std::string> & pid_map, bool compare_full_agrc = false);
+KRootErr get_all_cmdline_process(const char* str_root_key, std::map<pid_t, std::string> & pid_map, bool compare_full_agrc = false);
 }

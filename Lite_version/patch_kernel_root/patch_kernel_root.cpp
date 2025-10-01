@@ -4,7 +4,6 @@
 #include "patch_do_execve.h"
 #include "patch_avc_denied.h"
 #include "patch_filldir64.h"
-#include "patch_freeze_task.h"
 
 #include "3rdparty/find_mrs_register.h"
 #include "3rdparty/find_imm_register_offset.h"
@@ -89,9 +88,6 @@ void no_use_patch(const std::vector<char>& file_buf, KernelSymbolOffset &sym, st
 	if (sym.drm_dev_printk.offset) {
 		PATCH_AND_CONSUME(sym.drm_dev_printk, patch_ret_cmd(file_buf, sym.drm_dev_printk.offset, vec_patch_bytes_data));
 	}
-	if (sym.dev_printk.offset) {
-		PATCH_AND_CONSUME(sym.dev_printk, patch_ret_cmd(file_buf, sym.dev_printk.offset, vec_patch_bytes_data));
-	}
 }
 
 
@@ -101,7 +97,6 @@ PatchKernelResult patch_kernel_handler(const std::vector<char>& file_buf, size_t
 	PatchDoExecve patchDoExecve(patchBase, sym);
 	PatchAvcDenied patchAvcDenied(patchBase, sym.avc_denied);
 	PatchFilldir64 patchFilldir64(patchBase, sym.filldir64);
-	PatchFreezeTask patchFreezeTask(patchBase, sym.freeze_task);
 
 	PatchKernelResult r = { 0 };
 	if (kernel_ver.is_kernel_version_less("5.5.0")) {
@@ -110,10 +105,7 @@ PatchKernelResult patch_kernel_handler(const std::vector<char>& file_buf, size_t
 		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, cred_offset, seccomp_offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(r.root_key_start, next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
-
-		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, cred_offset, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, cred_offset, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied(next_hook_start_region, cred_offset, vec_patch_bytes_data));
 
 	} else if (kernel_ver.is_kernel_version_less("6.0.0") && sym.__cfi_check.offset) {
 		SymbolRegion next_hook_start_region = sym.__cfi_check;
@@ -121,20 +113,15 @@ PatchKernelResult patch_kernel_handler(const std::vector<char>& file_buf, size_t
 		PATCH_AND_CONSUME(next_hook_start_region, patchDoExecve.patch_do_execve(next_hook_start_region, cred_offset, seccomp_offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_root_key_guide(r.root_key_start, next_hook_start_region, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(next_hook_start_region, patchFilldir64.patch_filldir64_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_first_guide(next_hook_start_region, cred_offset, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied_core(next_hook_start_region, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(next_hook_start_region, patchFreezeTask.patch_freeze_task(next_hook_start_region, cred_offset, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(next_hook_start_region, patchAvcDenied.patch_avc_denied(next_hook_start_region, cred_offset, vec_patch_bytes_data));
 
-	} else if (sym.die.offset && sym.arm64_notify_die.offset && sym.kernel_halt.offset && sym.drm_dev_printk.offset && sym.dev_printk.offset) {
+	} else if (sym.die.offset && sym.arm64_notify_die.offset && sym.drm_dev_printk.offset) {
 		r.root_key_start = sym.die.offset;
 		PATCH_AND_CONSUME(sym.die, patchDoExecve.patch_do_execve(sym.die, cred_offset, seccomp_offset, vec_patch_bytes_data));
 		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_filldir64_root_key_guide(r.root_key_start, sym.die, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_jump(sym.die.offset, sym.dev_printk.offset, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.dev_printk, patchFilldir64.patch_filldir64_core(sym.dev_printk, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.kernel_halt, patchAvcDenied.patch_avc_denied_first_guide(sym.kernel_halt, cred_offset, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.kernel_halt, patchAvcDenied.patch_jump(sym.kernel_halt.offset, sym.drm_dev_printk.offset, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.drm_dev_printk, patchAvcDenied.patch_avc_denied_core(sym.drm_dev_printk, vec_patch_bytes_data));
-		PATCH_AND_CONSUME(sym.arm64_notify_die, patchFreezeTask.patch_freeze_task(sym.arm64_notify_die, cred_offset, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.die, patchFilldir64.patch_jump(sym.die.offset, sym.arm64_notify_die.offset, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.arm64_notify_die, patchFilldir64.patch_filldir64_core(sym.arm64_notify_die, vec_patch_bytes_data));
+		PATCH_AND_CONSUME(sym.drm_dev_printk, patchAvcDenied.patch_avc_denied(sym.drm_dev_printk, cred_offset, vec_patch_bytes_data));
 	}
 
 	return r;

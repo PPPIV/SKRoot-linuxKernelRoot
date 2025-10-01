@@ -6,7 +6,7 @@
 #pragma pack(push, 1)
 struct ExecveParam {
 	uint32_t do_execve_addr = 0;
-	char     do_execve_filename_reg = 0;
+	uint8_t do_execve_filename_reg = 0;
 	bool     is_single_char_ptr = false;
 };
 #pragma pack(pop)

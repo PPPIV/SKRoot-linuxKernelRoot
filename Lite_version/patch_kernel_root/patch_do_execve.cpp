@@ -135,12 +135,10 @@ size_t PatchDoExecve::patch_do_execve(const SymbolRegion& hook_func_start_region
 	memcpy(&hookOrigCmd, (void*)((size_t)&m_file_buf[0] + m_doexecve_reg_param.do_execve_addr), sizeof(hookOrigCmd));
 	std::string strHookOrigCmd = bytes2hex((const unsigned char*)hookOrigCmd, sizeof(hookOrigCmd));
 	str_bytes = str_bytes.substr(0, sizeof(empty_root_key_buf) * 2) + strHookOrigCmd + str_bytes.substr(sizeof(empty_root_key_buf) * 2 + 0x4 * 2);
-
 	if (shellcode_size > hook_func_start_region.size) {
 		std::cout << "[发生错误] patch_do_execve failed: not enough kernel space." << std::endl;
 		return 0;
 	}
-	
 	vec_out_patch_bytes_data.push_back({ str_bytes, hook_func_start_addr });
 	patch_jump(m_doexecve_reg_param.do_execve_addr, hook_func_start_addr + sizeof(empty_root_key_buf), vec_out_patch_bytes_data);
 	return shellcode_size;

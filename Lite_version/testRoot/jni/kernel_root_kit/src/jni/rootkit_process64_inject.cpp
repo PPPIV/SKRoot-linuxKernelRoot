@@ -17,13 +17,14 @@
 #include <map>
 
 #include "rootkit_umbrella.h"
+#include "rootkit_fork_helper.h"
 #include "rootkit_ptrace_arm64_utils.h"
 #include "rootkit_maps_helper.h"
 #include "rootkit_elf64_symbol_parser.h"
 using namespace __internal_kernel_root_68f0e3baff8b40b0ede841181f5f8e82943dae7e63627a82319cecacb6dd8375;
 namespace kernel_root {
 
-static ssize_t unsafe_load_libc64_modify_env_func_addr(
+static KRootErr unsafe_load_libc64_modify_env_func_addr(
 	const char* str_root_key,
 	const char* so_path,
 	api_offset_read_mode api_offset_mode,
@@ -32,7 +33,7 @@ static ssize_t unsafe_load_libc64_modify_env_func_addr(
 	size_t& p_getenv_offset,
 	size_t& p_setenv_offset) {
 
-	ssize_t ret = ERR_NONE;
+	KRootErr ret = KRootErr::ERR_NONE;
 	std::map<std::string, uint64_t> func_symbol_map;
 	func_symbol_map["getenv"] = 0;
 	func_symbol_map["setenv"] = 0;
@@ -40,14 +41,14 @@ static ssize_t unsafe_load_libc64_modify_env_func_addr(
 	func_symbol_map["munmap"] = 0;
 
 	do {
-		if(api_offset_mode == api_offset_read_mode::only_read_myself_mem || api_offset_mode == api_offset_read_mode::all) {
+		if(api_offset_mode == api_offset_read_only_read_self_mem || api_offset_mode == api_offset_read_all) {
 			bool is_already_loaded = !!get_module_base(-1, so_path);
 			if (is_already_loaded) {
 				ret = find_mem_elf64_symbol_address(so_path, func_symbol_map);
 				break;
 			}
 		}
-		if(api_offset_mode == api_offset_read_mode::only_read_file || api_offset_mode == api_offset_read_mode::all) {
+		if(api_offset_mode == api_offset_read_only_read_file || api_offset_mode == api_offset_read_all) {
 			ret = read_elf64_file_symbol_addr(so_path, func_symbol_map);
 			break;
 		}
@@ -60,7 +61,7 @@ static ssize_t unsafe_load_libc64_modify_env_func_addr(
 	return ret;
 }
 
-static ssize_t unsafe_inject_process_env64_PATH(
+static KRootErr unsafe_inject_process_env64_PATH(
 	int target_pid,
 	const char* libc64_so_path,
 	size_t& p_mmap_offset,
@@ -69,7 +70,7 @@ static ssize_t unsafe_inject_process_env64_PATH(
 	size_t& p_setenv_offset,
 	const char* add_path) {
 	size_t input_env_buf_size = 0;
-	ssize_t ret = ERR_INJECT_PROC64_ENV;
+	KRootErr ret = KRootErr::ERR_INJECT_PROC64_ENV;
 	size_t remote_libc64_handle = 0;
 	size_t mmap_addr, munmap_addr, getenv_addr, setenv_addr;
 	uint8_t* map_base;
@@ -201,7 +202,7 @@ static ssize_t unsafe_inject_process_env64_PATH(
 		goto _recovery;
 	}
 
-	ret = 0;
+	ret = KRootErr::ERR_NONE;
 	////printf("Press enter to detach\n");
 	//getchar();
 
@@ -213,8 +214,8 @@ _deatch:ptrace_detach(target_pid);
 _ret:	return ret;
 }
 
-static ssize_t unsafe_inject_process_env64_PATH_wrapper(const char* str_root_key, int target_pid, const char* add_path,
-	api_offset_read_mode api_offset_mode /* = api_offset_read_mode::all*/) {
+static KRootErr unsafe_inject_process_env64_PATH_wrapper(const char* str_root_key, int target_pid, const char* add_path,
+	api_offset_read_mode api_offset_mode /* = api_offset_read_all*/) {
 	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
 
 	/*
@@ -232,7 +233,7 @@ static ssize_t unsafe_inject_process_env64_PATH_wrapper(const char* str_root_key
 	*/
 	std::string target_process_libc_so_path = find_process_libc_so_path(target_pid);
 	if (target_process_libc_so_path.empty()) {
-		return ERR_LIBC_PATH_EMPTY;
+		return KRootErr::ERR_LIBC_PATH_EMPTY;
 	}
 	//printf("target_process_libc_so_path:%s\n", target_process_libc_so_path.c_str());
 
@@ -240,7 +241,7 @@ static ssize_t unsafe_inject_process_env64_PATH_wrapper(const char* str_root_key
 	size_t p_munmap_offset;
 	size_t p_getenv_offset;
 	size_t p_setenv_offset;
-	ssize_t ret = unsafe_load_libc64_modify_env_func_addr(
+	KRootErr ret = unsafe_load_libc64_modify_env_func_addr(
 		str_root_key,
 		target_process_libc_so_path.c_str(),
 		api_offset_mode,
@@ -255,27 +256,25 @@ static ssize_t unsafe_inject_process_env64_PATH_wrapper(const char* str_root_key
 	//printf("p_getenv_offset:%zu\n", p_getenv_offset);
 	//printf("p_setenv_offset:%zu\n", p_setenv_offset);
 	if(!p_mmap_offset || !p_munmap_offset || !p_getenv_offset || !p_setenv_offset) {
-		return ERR_LOAD_LIBC_FUNC_ADDR;
+		return KRootErr::ERR_LOAD_LIBC_FUNC_ADDR;
 	}
-	if (unsafe_inject_process_env64_PATH(target_pid, target_process_libc_so_path.c_str(), p_mmap_offset, p_munmap_offset, p_getenv_offset, p_setenv_offset, add_path) != 0) {
-		return ERR_INJECT_PROC64_ENV;
-	}
-	return ERR_NONE;
+	RETURN_ON_ERROR(unsafe_inject_process_env64_PATH(target_pid, target_process_libc_so_path.c_str(), p_mmap_offset, p_munmap_offset, p_getenv_offset, p_setenv_offset, add_path));
+	return KRootErr::ERR_NONE;
 }
 
 
-static ssize_t safe_inject_process_env64_PATH_wrapper(const char* str_root_key, int target_pid, const char* add_path,
-	api_offset_read_mode api_offset_mode /* = api_offset_read_mode::all*/) {
-	ssize_t out_err;
+static KRootErr safe_inject_process_env64_PATH_wrapper(const char* str_root_key, int target_pid, const char* add_path,
+	api_offset_read_mode api_offset_mode /* = api_offset_read_all*/) {
+	KRootErr out_err;
 	std::string libc_path;
 	fork_pipe_info finfo;
-	out_err = ERR_NONE;
+	out_err = KRootErr::ERR_NONE;
 	if(fork_pipe_child_process(finfo)) {
 		out_err = kernel_root::get_root(str_root_key);
-		if (out_err == ERR_NONE) {
+		if (out_err == KRootErr::ERR_NONE) {
 			libc_path = find_process_libc_so_path(target_pid);
 			if (libc_path.empty()) {
-				out_err = ERR_LIBC_PATH_EMPTY;
+				out_err = KRootErr::ERR_LIBC_PATH_EMPTY;
 			}
 		}
 		write_errcode_from_child(finfo, out_err);
@@ -284,17 +283,17 @@ static ssize_t safe_inject_process_env64_PATH_wrapper(const char* str_root_key, 
 		return {};
 	}
 	if(!is_fork_child_process_work_finished(finfo)) {
-		out_err = ERR_WAIT_FORK_CHILD;
+		out_err = KRootErr::ERR_WAIT_FORK_CHILD;
 	} else {
 		if(!read_errcode_from_child(finfo, out_err)) {
-			out_err = ERR_READ_CHILD_ERRCODE;
+			out_err = KRootErr::ERR_READ_CHILD_ERRCODE;
 		} else if(!read_string_from_child(finfo, libc_path)) {
-			out_err = ERR_READ_CHILD_STRING;
+			out_err = KRootErr::ERR_READ_CHILD_STRING;
 		}
 	}
 	RETURN_ON_ERROR(out_err);
 	if(libc_path.empty()) {
-		out_err = ERR_LIBC_PATH_EMPTY;
+		out_err = KRootErr::ERR_LIBC_PATH_EMPTY;
 		return out_err;
 	}
 	//printf("target_process_libc_so_path:%s\n", libc_path.c_str());
@@ -322,14 +321,14 @@ static ssize_t safe_inject_process_env64_PATH_wrapper(const char* str_root_key, 
 	//printf("p_setenv_offset:%zu\n", p_setenv_offset);
 
 	if(!p_mmap_offset || !p_munmap_offset || !p_getenv_offset || !p_setenv_offset) {
-		return ERR_LOAD_LIBC_FUNC_ADDR;
+		return KRootErr::ERR_LOAD_LIBC_FUNC_ADDR;
 	}
 
 	finfo.reset();
-	out_err = ERR_NONE;
+	out_err = KRootErr::ERR_NONE;
 	if(fork_pipe_child_process(finfo)) {
 		out_err = kernel_root::get_root(str_root_key);
-		if (out_err == ERR_NONE) {
+		if (out_err == KRootErr::ERR_NONE) {
 			out_err = unsafe_inject_process_env64_PATH(target_pid, libc_path.c_str(), p_mmap_offset, p_munmap_offset, p_getenv_offset, p_setenv_offset, add_path);
 		}
 		write_errcode_from_child(finfo, out_err);
@@ -338,49 +337,49 @@ static ssize_t safe_inject_process_env64_PATH_wrapper(const char* str_root_key, 
 	}
 	
 	if(!is_fork_child_process_work_finished(finfo)) {
-		out_err = ERR_WAIT_FORK_CHILD;
+		out_err = KRootErr::ERR_WAIT_FORK_CHILD;
 	} else {
 		if(!read_errcode_from_child(finfo, out_err)) {
-			out_err = ERR_READ_CHILD_ERRCODE;
+			out_err = KRootErr::ERR_READ_CHILD_ERRCODE;
 		}
 	}
 	return out_err;
 }
 
-ssize_t inject_process_env64_PATH_wrapper(const char* str_root_key, int target_pid, const char* add_path,
-	api_offset_read_mode api_offset_mode /* = api_offset_read_mode::all*/) {
+KRootErr inject_process_env64_PATH_wrapper(const char* str_root_key, int target_pid, const char* add_path,
+	api_offset_read_mode api_offset_mode /* = api_offset_read_all*/) {
+	if(!add_path || !strlen(add_path)) return KRootErr::ERR_PARAM;
 	return safe_inject_process_env64_PATH_wrapper(str_root_key, target_pid, add_path, api_offset_mode);
 }
 
-static ssize_t unsafe_kill_process(const char* str_root_key, pid_t pid) {
-	ssize_t err = ERR_NONE;
+static KRootErr unsafe_kill_process(const char* str_root_key, pid_t pid) {
 	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
 	if(kill(pid, SIGKILL) != 0) {
-		err = ERR_KILL;
+		return KRootErr::ERR_KILL;
 	}
-	return err;
+	return KRootErr::ERR_NONE;
 }
 
-static ssize_t safe_kill_process(const char* str_root_key, pid_t pid) {
+static KRootErr safe_kill_process(const char* str_root_key, pid_t pid) {
 	fork_pipe_info finfo;
 	if(fork_pipe_child_process(finfo)) {
-		ssize_t err = kill_process(str_root_key, pid);
+		KRootErr err = unsafe_kill_process(str_root_key, pid);
 		write_errcode_from_child(finfo, err);
 		_exit(0);
-		return 0;
+		return KRootErr::ERR_NONE;
 	}
-	ssize_t err = ERR_NONE;
+	KRootErr err = KRootErr::ERR_NONE;
 	if(!is_fork_child_process_work_finished(finfo)) {
-		err = ERR_WAIT_FORK_CHILD;
+		err = KRootErr::ERR_WAIT_FORK_CHILD;
 	} else {
 		if(!read_errcode_from_child(finfo, err)) {
-			err = ERR_READ_CHILD_ERRCODE;
+			err = KRootErr::ERR_READ_CHILD_ERRCODE;
 		}
 	}
 	return err;
 }
 
-ssize_t kill_process(const char* str_root_key, pid_t pid) {
+KRootErr kill_process(const char* str_root_key, pid_t pid) {
 	return safe_kill_process(str_root_key, pid);
 }
 }

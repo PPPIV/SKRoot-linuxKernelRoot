@@ -6,11 +6,11 @@
 void so_entry() {
     char k_path[] = {'P', 'A', 'T', 'H', '\0'};
     std::string who = getenv(k_path);
-    std::string su_path = const_cast<char*>(static_inline_su_folder);
-    if(who.find(su_path) != std::string::npos) {
+    std::string su_dir_path = const_cast<char*>(static_inline_su_dir_path);
+    if(who.find(su_dir_path) != std::string::npos) {
         return;
     }
-    std::string newWho = su_path;
+    std::string newWho = su_dir_path;
     newWho += ":";
     newWho += who;
     setenv(k_path, newWho.c_str(), 1);

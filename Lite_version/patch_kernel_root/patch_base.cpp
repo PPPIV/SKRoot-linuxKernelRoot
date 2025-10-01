@@ -31,7 +31,6 @@ int PatchBase::get_cred_atomic_usage_len() {
 	return m_cred_uid_offset;
 }
 
-
 int PatchBase::get_cred_uid_region_len() {
 	return sizeof(cred_uid_info);
 }
@@ -39,7 +38,6 @@ int PatchBase::get_cred_uid_region_len() {
 int PatchBase::get_cred_euid_offset() {
 	return get_cred_atomic_usage_len() + offsetof(cred_uid_info, euid);
 }
-
 
 int PatchBase::get_cred_securebits_padding() {
 	if (get_cred_atomic_usage_len() == 8) {

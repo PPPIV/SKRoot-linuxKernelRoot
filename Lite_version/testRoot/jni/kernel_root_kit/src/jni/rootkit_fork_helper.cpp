@@ -12,6 +12,7 @@
 #include <sys/wait.h>
 
 #include "rootkit_umbrella.h"
+#include "rootkit_fork_helper.h"
 
 #define BUF_SIZE 4096
 namespace kernel_root {
@@ -67,7 +68,7 @@ bool is_fork_child_process_work_finished(const fork_base_info & finfo) {
 }
 
 bool write_transfer_data_from_child(const fork_pipe_info & finfo, void* data, size_t data_len) {
-	if(write(finfo.fd_write_child, &data_len, sizeof(data_len))!=sizeof(data_len)) {
+	if(write(finfo.fd_write_child, &data_len, sizeof(data_len)) != sizeof(data_len)) {
 		return false;
 	}
     if(data_len == 0) {
@@ -81,7 +82,7 @@ bool write_transfer_data_from_child(const fork_pipe_info & finfo, void* data, si
 
 bool read_transfer_data_from_child(fork_pipe_info & finfo, void* &data, size_t &data_len) {
 	data_len = 0;
-	if(read(finfo.fd_read_child , (void*)&data_len, sizeof(data_len))!=sizeof(data_len)) {
+	if(read(finfo.fd_read_child , (void*)&data_len, sizeof(data_len)) != sizeof(data_len)) {
 		return false;
 	}
 	if(data_len == 0) {
@@ -95,19 +96,19 @@ bool read_transfer_data_from_child(fork_pipe_info & finfo, void* &data, size_t &
 	return true;
 }
 
-bool write_errcode_from_child(const fork_pipe_info & finfo, ssize_t errCode) {
-	if(write(finfo.fd_write_child, &errCode, sizeof(errCode))==sizeof(errCode)) {
+bool write_errcode_from_child(const fork_pipe_info & finfo, KRootErr errCode) {
+	if(write(finfo.fd_write_child, &errCode, sizeof(errCode)) == sizeof(errCode)) {
 		return true;
 	}
 	return false;
 }
 
-bool read_errcode_from_child(const fork_pipe_info & finfo, ssize_t & errCode) {
+bool read_errcode_from_child(const fork_pipe_info & finfo, KRootErr & errCode) {
     ssize_t n = read(finfo.fd_read_child, &errCode, sizeof(errCode));
     if (n == sizeof(errCode)) {
         return true;
     } else if (n == 0) {
-        errCode = ERR_READ_EOF;
+        errCode = KRootErr::ERR_READ_EOF;
         return false;
     }
 	return false;

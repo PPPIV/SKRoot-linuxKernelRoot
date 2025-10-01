@@ -152,7 +152,6 @@
     <ClCompile Include="patch_base.cpp" />
     <ClCompile Include="patch_do_execve.cpp" />
     <ClCompile Include="patch_filldir64.cpp" />
-    <ClCompile Include="patch_freeze_task.cpp" />
     <ClCompile Include="patch_kernel_root.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -261,7 +260,6 @@
     <ClInclude Include="patch_base.h" />
     <ClInclude Include="patch_do_execve.h" />
     <ClInclude Include="patch_filldir64.h" />
-    <ClInclude Include="patch_freeze_task.h" />
     <ClInclude Include="patch_kernel_root.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

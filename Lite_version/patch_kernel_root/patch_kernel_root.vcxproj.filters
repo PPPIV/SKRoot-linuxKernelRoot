@@ -72,9 +72,6 @@
     <ClCompile Include="patch_base.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="patch_freeze_task.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="analyze\symbol_analyze.cpp">
       <Filter>analyze</Filter>
     </ClCompile>
@@ -294,9 +291,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="patch_base.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="patch_freeze_task.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="analyze\symbol_analyze.h">

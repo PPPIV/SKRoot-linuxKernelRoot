@@ -32,9 +32,7 @@ bool SymbolAnalyze::find_symbol_offset() {
 
 	m_kernel_sym_offset.die = parse_symbol_region(kallsyms_matching_single("die"));
 	m_kernel_sym_offset.arm64_notify_die = parse_symbol_region(kallsyms_matching_single("arm64_notify_die"));
-	m_kernel_sym_offset.kernel_halt = parse_symbol_region(kallsyms_matching_single("kernel_halt"));
 	m_kernel_sym_offset.drm_dev_printk = parse_symbol_region(kallsyms_matching_single("drm_dev_printk"));
-	m_kernel_sym_offset.dev_printk = parse_symbol_region(kallsyms_matching_single("__dev_printk"));
 
 	m_kernel_sym_offset.__do_execve_file = kallsyms_matching_single("__do_execve_file");
 	m_kernel_sym_offset.do_execveat_common = kallsyms_matching_single("do_execveat_common");
@@ -58,8 +56,6 @@ bool SymbolAnalyze::find_symbol_offset() {
 	if (m_kernel_sym_offset.filldir64 == 0) {
 		m_kernel_sym_offset.filldir64 = kallsyms_matching_single("filldir64", true);
 	}
-
-	m_kernel_sym_offset.freeze_task = kallsyms_matching_single("freeze_task");
 
 	m_kernel_sym_offset.revert_creds = kallsyms_matching_single("revert_creds");
 	m_kernel_sym_offset.sys_getuid = kallsyms_matching_single("sys_getuid");
@@ -87,7 +83,6 @@ bool SymbolAnalyze::find_symbol_offset() {
 	return (m_kernel_sym_offset.do_execve || m_kernel_sym_offset.do_execveat || m_kernel_sym_offset.do_execveat_common) 
 		&& m_kernel_sym_offset.avc_denied.offset
 		&& m_kernel_sym_offset.filldir64
-		&& m_kernel_sym_offset.freeze_task
 		&& m_kernel_sym_offset.revert_creds
 		&& m_kernel_sym_offset.sys_getuid
 		&& m_kernel_sym_offset.prctl_get_seccomp;
@@ -99,10 +94,7 @@ void SymbolAnalyze::printf_symbol_offset() {
 	std::cout << "_stext:" << m_kernel_sym_offset._stext << std::endl;
 	std::cout << "die:" << m_kernel_sym_offset.die.offset << ", size:" << m_kernel_sym_offset.die.size << std::endl;
 	std::cout << "arm64_notify_die:" << m_kernel_sym_offset.arm64_notify_die.offset << ", size:" << m_kernel_sym_offset.arm64_notify_die.size << std::endl;
-	std::cout << "kernel_halt:" << m_kernel_sym_offset.kernel_halt.offset << ", size:" << m_kernel_sym_offset.kernel_halt.size << std::endl;
-
 	std::cout << "drm_dev_printk:" << m_kernel_sym_offset.drm_dev_printk.offset << ", size:" << m_kernel_sym_offset.drm_dev_printk.size << std::endl;
-	std::cout << "dev_printk:" << m_kernel_sym_offset.dev_printk.offset << ", size:" << m_kernel_sym_offset.dev_printk.size << std::endl;
 
 	std::cout << "__do_execve_file:" << m_kernel_sym_offset.__do_execve_file << std::endl;
 	std::cout << "do_execveat_common:" << m_kernel_sym_offset.do_execveat_common << std::endl;
@@ -112,7 +104,6 @@ void SymbolAnalyze::printf_symbol_offset() {
 
 	std::cout << "avc_denied:" << m_kernel_sym_offset.avc_denied.offset << ", size:" << m_kernel_sym_offset.avc_denied.size << std::endl;
 	std::cout << "filldir64:" << m_kernel_sym_offset.filldir64 << std::endl;
-	std::cout << "freeze_task:" << m_kernel_sym_offset.freeze_task << std::endl;
 
 	std::cout << "revert_creds:" << m_kernel_sym_offset.revert_creds << std::endl;
 	std::cout << "sys_getuid:" << m_kernel_sym_offset.sys_getuid << std::endl;

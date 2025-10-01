@@ -181,12 +181,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClickSuEnvInstallBtn() {
         String insRet = installSu(rootKey);
         appendConsoleMsg(insRet);
-        if(insRet.indexOf("installSu done.") != -1) {
-            String suFullPath = getLastInstallSuFullPath();
-            appendConsoleMsg("lastInstallSuFullPath:" + suFullPath);
+        if(insRet.indexOf("install_su done.") != -1) {
+            String suFilePath = getLastSuFilePath();
+            appendConsoleMsg("last_su_file_path:" + suFilePath);
             DialogUtils.showMsgDlg(this,"温馨提示",
                     "安装部署su成功，su路径已复制到剪贴板。", null);
-            ClipboardUtils.copyText(this, suFullPath);
+            ClipboardUtils.copyText(this, suFilePath);
             appendConsoleMsg("安装部署su成功，su路径已复制到剪贴板");
         }
     }
@@ -219,7 +219,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 appendConsoleMsg(autoSuEnvInjectRet);
                                 m_loadingDlg.cancel();
 
-                                if(autoSuEnvInjectRet.indexOf("autoSuEnvInject done.")!= -1) {
+                                if(autoSuEnvInjectRet.indexOf("auto_su_env_inject done.")!= -1) {
                                     DialogUtils.showMsgDlg(MainActivity.this, "提示",
                                             "已授予ROOT权限至APP [" + appItem.getShowName(MainActivity.this) + "]",
                                             appItem.getDrawable(MainActivity.this));
@@ -264,7 +264,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         SelectFileRecyclerItem fileItem = (SelectFileRecyclerItem) msg.obj;
                                         String parasiteImplantSuEnvRet = parasiteImplantSuEnv(rootKey, appItem.getPackageName(), fileItem.getFilePath());
                                         appendConsoleMsg(parasiteImplantSuEnvRet);
-                                        if(parasiteImplantSuEnvRet.indexOf("parasiteImplantSuEnv done.")!= -1) {
+                                        if(parasiteImplantSuEnvRet.indexOf("parasite_implant_su_env done.")!= -1) {
                                             DialogUtils.showMsgDlg(MainActivity.this, "提示",
                                                     "已永久寄生su环境至APP [" + appItem.getShowName(MainActivity.this) + "]",
                                                     appItem.getDrawable(MainActivity.this));
@@ -351,7 +351,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         SelectFileRecyclerItem fileItem = (SelectFileRecyclerItem) msg.obj;
                                         String parasiteImplantAppRet = parasiteImplantApp(rootKey, appItem.getPackageName(), fileItem.getFilePath());
                                         appendConsoleMsg(parasiteImplantAppRet);
-                                        if(parasiteImplantAppRet.indexOf("parasiteImplantApp done.")!= -1) {
+                                        if(parasiteImplantAppRet.indexOf("parasite_implant_app done.")!= -1) {
                                             DialogUtils.showMsgDlg(MainActivity.this, "提示",
                                                     "已经寄生到APP [" + appItem.getShowName(MainActivity.this) + "]",
                                                     appItem.getDrawable(MainActivity.this));
@@ -723,7 +723,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public native String installSu(String rootKey);
 
-    public native String getLastInstallSuFullPath();
+    public native String getLastSuFilePath();
 
     public native String uninstallSu(String rootKey);
 

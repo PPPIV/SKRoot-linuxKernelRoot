@@ -1,27 +1,28 @@
 ﻿#pragma once
-#include <stdarg.h>
-#include <string.h>
-#include <unistd.h>
-#include <sstream>
-#include <iomanip>
+#include <string>
+#include <string_view>
+#include <random>
 namespace {
-static void rand_str_small(char* dest, int n) {
-    int i, randno;
-    char stardstring[27] = "abcdefghijklmnopqrstuvwxyz";
-    srand((unsigned)time(NULL));
-    for (i = 0; i < n; i++) {
-        randno = rand() % 26;
-        *dest = stardstring[randno];
-        dest++;
-    }
-    *dest = '\0';
+static std::mt19937& rng() {
+    static thread_local std::mt19937 gen(std::random_device{}());
+    return gen;
 }
 
-static void generate_lib_name(char* dest) {
-    int len = rand() % 4 + 3;
-    sprintf(dest, "lib");
-    rand_str_small(dest + 4, len);
-    strcat(dest, ".so");
+static std::string generate_lib_name() {
+    static constexpr std::string_view alphabet = "abcdefghijklmnopqrstuvwxyz";
+    std::uniform_int_distribution<int> len_dist(3, 6);
+    std::uniform_int_distribution<size_t> pick(0, alphabet.size() - 1);
+
+    const int len = len_dist(rng());
+
+    std::string name;
+    name.reserve(3 + len + 3);
+    name += "lib";
+    for (int i = 0; i < len; ++i) {
+        name.push_back(alphabet[pick(rng())]);
+    }
+    name += ".so";
+    return name;
 }
 
 }

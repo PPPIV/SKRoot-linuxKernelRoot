@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <thread>
+#include <filesystem>
 #include <sys/capability.h>
 
 #include "kernel_root_kit/include/rootkit_umbrella.h"
@@ -12,7 +13,7 @@
 #include "cJSON.h"
 using namespace std;
 
-std::string g_last_su_full_path;
+std::string g_last_su_file_path;
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_linux_permissionmanager_MainActivity_testRoot(
@@ -23,33 +24,7 @@ Java_com_linux_permissionmanager_MainActivity_testRoot(
     string strRootKey= str1;
     env->ReleaseStringUTFChars(rootKey, str1);
 
-    std::string result;
-    kernel_root::fork_pipe_info finfo;
-    ssize_t err = 0;
-    if(fork_pipe_child_process(finfo)) {
-        err = kernel_root::get_root(strRootKey.c_str());
-        result = "getRoot:";
-        result += std::to_string(err);
-        result += "\n\n";
-        if(err == 0) {
-            result += kernel_root::get_capability_info();
-            result += "\n\n";
-        }
-        write_errcode_from_child(finfo, err);
-        write_string_from_child(finfo, result);
-        _exit(0);
-        return 0;
-    }
-    err = 0;
-    if(!is_fork_child_process_work_finished(finfo)) {
-        err = ERR_WAIT_FORK_CHILD;
-    } else {
-        if(!read_errcode_from_child(finfo, err)) {
-            err = ERR_READ_CHILD_ERRCODE;
-        } else if(!read_string_from_child(finfo, result)) {
-            err = ERR_READ_CHILD_STRING;
-        }
-    }
+    std::string result = kernel_root::get_root_test_report(strRootKey.c_str());
     return env->NewStringUTF(result.c_str());
 }
 
@@ -67,10 +42,10 @@ Java_com_linux_permissionmanager_MainActivity_runRootCmd(
     string strCmd= str1;
     env->ReleaseStringUTFChars(cmd, str1);
 
-    ssize_t  err;
-    string result = kernel_root::run_root_cmd(strRootKey.c_str(), strCmd.c_str(), err);
+    string result;
+    KRootErr err = kernel_root::run_root_cmd(strRootKey.c_str(), strCmd.c_str(), result);
     stringstream sstr;
-    sstr << "runRootCmd err:" << err << ", result:" << result;
+    sstr << "run_root_cmd err:" << to_num(err) << ", result:" << result;
     return env->NewStringUTF(sstr.str().c_str());
 }
 
@@ -89,10 +64,10 @@ Java_com_linux_permissionmanager_MainActivity_rootExecProcessCmd(
     string strCmd= str1;
     env->ReleaseStringUTFChars(cmd, str1);
 
-    ssize_t  err = kernel_root::root_exec_process(strRootKey.c_str(), strCmd.c_str());
+    KRootErr err = kernel_root::root_exec_process(strRootKey.c_str(), strCmd.c_str());
 
     stringstream sstr;
-    sstr << "root_exec_process err:" << err;
+    sstr << "root_exec_process err:" << to_num(err);
     return env->NewStringUTF(sstr.str().c_str());
 }
 
@@ -106,23 +81,24 @@ Java_com_linux_permissionmanager_MainActivity_installSu(
     string strRootKey= str1;
     env->ReleaseStringUTFChars(rootKey, str1);
 
-    stringstream sstr;
     //安装su工具套件
-    ssize_t err;
-    std::string su_hide_full_path = kernel_root::install_su(strRootKey.c_str(), err);
-    sstr << "install su err:" << err<<", su_hide_full_path:" << su_hide_full_path << std::endl;
-    g_last_su_full_path = su_hide_full_path;
-    if (err == 0) {
-        sstr << "installSu done."<< std::endl;
+    std::string su_hide_full_path;
+    KRootErr err = kernel_root::install_su(strRootKey.c_str(), su_hide_full_path);
+
+    stringstream sstr;
+    sstr << "install su err:" << to_num(err) <<", su_hide_full_path:" << su_hide_full_path << std::endl;
+    g_last_su_file_path = su_hide_full_path;
+    if (err == KRootErr::ERR_NONE) {
+        sstr << "install_su done."<< std::endl;
     }
     return env->NewStringUTF(sstr.str().c_str());
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_linux_permissionmanager_MainActivity_getLastInstallSuFullPath(
+Java_com_linux_permissionmanager_MainActivity_getLastSuFilePath(
         JNIEnv* env,
         jobject /* this */) {
-    return env->NewStringUTF(g_last_su_full_path.c_str());
+    return env->NewStringUTF(g_last_su_file_path.c_str());
 }
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -137,13 +113,13 @@ Java_com_linux_permissionmanager_MainActivity_uninstallSu(
 
     stringstream sstr;
 
-    ssize_t err = kernel_root::uninstall_su(strRootKey.c_str());
-    sstr << "uninstallSu err:" << err << std::endl;
-    if (err != 0) {
+    KRootErr err = kernel_root::uninstall_su(strRootKey.c_str());
+    sstr << "uninstall_su err:" << to_num(err) << std::endl;
+    if (err != KRootErr::ERR_NONE) {
         return env->NewStringUTF(sstr.str().c_str());
     }
-    g_last_su_full_path.clear();
-    sstr << "uninstallSu done.";
+    g_last_su_file_path.clear();
+    sstr << "uninstall_su done.";
     return env->NewStringUTF(sstr.str().c_str());
 }
 
@@ -154,7 +130,7 @@ Java_com_linux_permissionmanager_MainActivity_autoSuEnvInject(
         jstring rootKey,
         jstring targetProcessCmdline) {
     
-    if(g_last_su_full_path.empty()) {
+    if(g_last_su_file_path.empty()) {
         return env->NewStringUTF("【错误】请先安装部署su");
     }
     const char *str1 = env->GetStringUTFChars(rootKey, 0);
@@ -169,37 +145,32 @@ Java_com_linux_permissionmanager_MainActivity_autoSuEnvInject(
 
     //杀光所有历史进程
     std::set<pid_t> out;
-    ssize_t err = kernel_root::find_all_cmdline_process(strRootKey.c_str(), strTargetProcessCmdline.c_str(), out);
-    sstr << "find_all_cmdline_process err:"<< err<<", cnt:"<<out.size() << std::endl;
-    if (err != 0) {
+    KRootErr err = kernel_root::find_all_cmdline_process(strRootKey.c_str(), strTargetProcessCmdline.c_str(), out);
+    sstr << "find_all_cmdline_process err:"<< to_num(err) <<", cnt:"<<out.size() << std::endl;
+    if (err != KRootErr::ERR_NONE) {
         return env->NewStringUTF(sstr.str().c_str());
     }
     std::string kill_cmd;
     for (pid_t t : out) {
         err =  kernel_root::kill_process(strRootKey.c_str(), t);
-        sstr << "kill_ret err:"<< err << std::endl;
-        if (err != 0) {
+        sstr << "kill_ret err:"<< to_num(err) << std::endl;
+        if (err != KRootErr::ERR_NONE) {
             return env->NewStringUTF(sstr.str().c_str());
         }
     }
     pid_t pid;
     err = kernel_root::wait_and_find_cmdline_process(strRootKey.c_str(), strTargetProcessCmdline.c_str(), 60*1000, pid);
-
-    std::string folder_path = g_last_su_full_path;
-    int n = folder_path.find_last_of("/");
-    if(n != -1) {
-        folder_path = folder_path.substr(0,n);
-    }
-    sstr << "autoSuEnvInject("<< err<<", " <<  folder_path <<")" << std::endl;
-    if (err != 0) {
+    std::string su_dir_path = err == KRootErr::ERR_NONE ? (std::filesystem::path(g_last_su_file_path).parent_path().string() + "/") : "";
+    sstr << "auto_su_env_inject("<< to_num(err) <<", " <<  su_dir_path <<")" << std::endl;
+    if (err != KRootErr::ERR_NONE) {
         return env->NewStringUTF(sstr.str().c_str());
     }
-    err = kernel_root::inject_process_env64_PATH_wrapper(strRootKey.c_str(), pid, folder_path.c_str());
-    sstr << "autoSuEnvInject ret val:" << err << std::endl;
-    if (err != 0) {
+    err = kernel_root::inject_process_env64_PATH_wrapper(strRootKey.c_str(), pid, su_dir_path.c_str());
+    sstr << "auto_su_env_inject ret val:" << to_num(err) << std::endl;
+    if (err != KRootErr::ERR_NONE) {
         return env->NewStringUTF(sstr.str().c_str());
     }
-    sstr << "autoSuEnvInject done.";
+    sstr << "auto_su_env_inject done.";
     return env->NewStringUTF(sstr.str().c_str());
 }
 
@@ -217,9 +188,9 @@ Java_com_linux_permissionmanager_MainActivity_getAllCmdlineProcess(
     env->ReleaseStringUTFChars(rootKey, str1);
 
     std::map<pid_t, std::string> pid_map;
-    ssize_t err = kernel_root::get_all_cmdline_process(strRootKey.c_str(), pid_map);
-    if(err != 0) {
-        ss << "get_all_cmdline_process err:"<< err<< std::endl;
+    KRootErr err = kernel_root::get_all_cmdline_process(strRootKey.c_str(), pid_map);
+    if (err != KRootErr::ERR_NONE) {
+        ss << "get_all_cmdline_process err:"<< to_num(err) << std::endl;
         return env->NewStringUTF(ss.str().c_str());
     }
     cJSON *root = cJSON_CreateArray();
@@ -256,9 +227,9 @@ Java_com_linux_permissionmanager_MainActivity_parasitePrecheckApp(
 
     stringstream sstr;
     std::set<pid_t> test_pid;
-    ssize_t err = kernel_root::find_all_cmdline_process(strRootKey.c_str(), strTargetProcessCmdline.c_str(), test_pid);
-    if (err != 0) {
-        sstr << "find_all_cmdline_process err:"<< err<<", cnt:"<< test_pid.size() << std::endl;
+    KRootErr err = kernel_root::find_all_cmdline_process(strRootKey.c_str(), strTargetProcessCmdline.c_str(), test_pid);
+    if (err != KRootErr::ERR_NONE) {
+        sstr << "find_all_cmdline_process err:"<< to_num(err) <<", cnt:"<< test_pid.size() << std::endl;
         return env->NewStringUTF(sstr.str().c_str());
     }
     if (test_pid.size() == 0) {
@@ -266,23 +237,23 @@ Java_com_linux_permissionmanager_MainActivity_parasitePrecheckApp(
         return env->NewStringUTF(sstr.str().c_str());
     }
 
-    std::map<std::string, kernel_root::app_so_status> so_path_list;
-    err = kernel_root::parasite_precheck_app(strRootKey.c_str(), strTargetProcessCmdline.c_str(), so_path_list);
-    if (err) {
-        sstr << "parasite_precheck_app ret val:" << err << std::endl;
-        if(err == ERR_EXIST_32BIT) {
-            sstr << "此目标APP为32位应用，无法寄生" << err << std::endl;
+    std::map<std::string, kernel_root::app_dynlib_status> dynlib_path_list;
+    err = kernel_root::parasite_precheck_app(strRootKey.c_str(), strTargetProcessCmdline.c_str(), dynlib_path_list);
+    if (err != KRootErr::ERR_NONE) {
+        sstr << "parasite_precheck_app ret val:" << to_num(err) << std::endl;
+        if(err == KRootErr::ERR_EXIST_32BIT) {
+            sstr << "此目标APP为32位应用，无法寄生" << to_num(err) << std::endl;
         }
         return env->NewStringUTF(sstr.str().c_str());
     }
 
-    if (!so_path_list.size()) {
+    if (!dynlib_path_list.size()) {
         sstr << "无法检测到目标APP的JNI环境，目标APP暂不可被寄生；您可重新运行目标APP后重试；或将APP进行手动加固(加壳)，因为加固(加壳)APP后，APP会被产生JNI环境，方可寄生！" << std::endl;
         return env->NewStringUTF(sstr.str().c_str());
     }
 
     cJSON *root = cJSON_CreateArray();
-    for (auto iter = so_path_list.begin(); iter != so_path_list.end(); iter++) {
+    for (auto iter = dynlib_path_list.begin(); iter != dynlib_path_list.end(); iter++) {
         cJSON *item = cJSON_CreateObject();
         size_t len = iter->first.length();
         size_t max_encoded_len = 3 * len + 1;
@@ -307,7 +278,7 @@ Java_com_linux_permissionmanager_MainActivity_parasiteImplantApp(
         jstring targetProcessCmdline,
         jstring targetSoFullPath) {
     stringstream sstr;
-    ssize_t err;
+    KRootErr err;
     const char *str1 = env->GetStringUTFChars(rootKey, 0);
     string strRootKey= str1;
     env->ReleaseStringUTFChars(rootKey, str1);
@@ -321,11 +292,11 @@ Java_com_linux_permissionmanager_MainActivity_parasiteImplantApp(
     env->ReleaseStringUTFChars(targetSoFullPath, str1);
 
     err = kernel_root::parasite_implant_app(strRootKey.c_str(), strTargetProcessCmdline.c_str(), strTargetSoFullPath.c_str());
-    if (err != 0) {
-        sstr << "parasite_implant_app err:"<< err << std::endl;
+    if (err != KRootErr::ERR_NONE) {
+        sstr << "parasite_implant_app err:"<< to_num(err) << std::endl;
         return env->NewStringUTF(sstr.str().c_str());
     }
-    sstr << "parasiteImplantApp done.";
+    sstr << "parasite_implant_app done.";
     return env->NewStringUTF(sstr.str().c_str());
 
 }
@@ -338,7 +309,7 @@ Java_com_linux_permissionmanager_MainActivity_parasiteImplantSuEnv(
         jstring rootKey,
         jstring targetProcessCmdline,
         jstring targetSoFullPath) {
-    if(g_last_su_full_path.empty()) {
+    if(g_last_su_file_path.empty()) {
         return env->NewStringUTF("【错误】请先安装部署su");
     }
 
@@ -354,17 +325,15 @@ Java_com_linux_permissionmanager_MainActivity_parasiteImplantSuEnv(
     string strTargetSoFullPath = str1;
     env->ReleaseStringUTFChars(targetSoFullPath, str1);
 
-    std::string folder = g_last_su_full_path;
-    int n = folder.find_last_of("/");
-    folder = folder.substr(0, n);
+    std::string su_dir_path = std::filesystem::path(g_last_su_file_path).parent_path().string() + "/";
 
     stringstream sstr;
-    ssize_t err = kernel_root::parasite_implant_su_env(strRootKey.c_str(), strTargetProcessCmdline.c_str(), strTargetSoFullPath.c_str(), folder);
-    if (err != 0) {
-        sstr << "parasite_implant_su_env err:"<< err << std::endl;
+    KRootErr err = kernel_root::parasite_implant_su_env(strRootKey.c_str(), strTargetProcessCmdline.c_str(), strTargetSoFullPath.c_str(), su_dir_path.c_str());
+    if (err != KRootErr::ERR_NONE) {
+        sstr << "parasite_implant_su_env err:" << to_num(err) << std::endl;
         return env->NewStringUTF(sstr.str().c_str());
     }
-    sstr << "parasiteImplantSuEnv done.";
+    sstr << "parasite_implant_su_env done.";
     return env->NewStringUTF(sstr.str().c_str());
 
 }

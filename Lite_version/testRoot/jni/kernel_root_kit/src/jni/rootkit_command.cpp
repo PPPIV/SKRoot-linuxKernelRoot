@@ -12,21 +12,27 @@
 #include <sys/prctl.h>
 
 #include "rootkit_umbrella.h"
+#include "rootkit_fork_helper.h"
+#include "common/cgroup_v2_self.h"
+#include "common/cgroup_v1_tasks_self.h"
 
 namespace kernel_root {
-ssize_t get_root(const char* str_root_key) {
-	if(getuid() == 0) { return ERR_NONE; }
-	if (str_root_key == NULL) { return ERR_PARAM; }
+KRootErr get_root(const char* str_root_key) {
+	if(getuid() == 0) { return KRootErr::ERR_NONE; }
+	if (str_root_key == NULL) { return KRootErr::ERR_PARAM; }
 	syscall(__NR_execve, str_root_key, NULL, NULL);
-	if(getuid() != 0) { return ERR_NO_ROOT; }
-	return ERR_NONE;
+	if(getuid() != 0) { return KRootErr::ERR_NO_ROOT; }
+
+	cg_v2::migrate_self_to_root();
+	cg_v1::migrate_self_threads_v1(/*cpuset*/nullptr, /*stune*/nullptr);
+	return KRootErr::ERR_NONE;
 }
 
-std::string run_root_cmd(const char* str_root_key, const char* cmd, ssize_t & err) {
-	if (str_root_key == NULL || cmd == NULL || strlen(cmd) == 0) {
-		err = ERR_PARAM;
-		return {};
-	}
+KRootErr run_root_cmd_with_cb(const char* str_root_key, const char* cmd, void (*cb)(const char* result)) {
+	if (str_root_key == NULL || cmd == NULL || strlen(cmd) == 0) return KRootErr::ERR_PARAM;
+
+	KRootErr err = KRootErr::ERR_NONE;
+
 	//把错误信息也打出来
 	std::string cmd_add_err_info = cmd;
 	cmd_add_err_info += " 2>&1";
@@ -34,12 +40,11 @@ std::string run_root_cmd(const char* str_root_key, const char* cmd, ssize_t & er
 	std::string result;
 	fork_pipe_info finfo;
 	if(fork_pipe_child_process(finfo)) {
-		err = ERR_NONE;
 		do {
 			BREAK_ON_ERROR(get_root(str_root_key));
 			FILE * fp = popen(cmd_add_err_info.c_str(), "r");
 			if(!fp) {
-				err = ERR_POPEN;
+				err = KRootErr::ERR_POPEN;
 				break;
 			}
 			int pip = fileno(fp);
@@ -62,16 +67,17 @@ std::string run_root_cmd(const char* str_root_key, const char* cmd, ssize_t & er
 		_exit(0);
 		return {};
 	}
-	err = ERR_NONE;
 	if(!is_fork_child_process_work_finished(finfo)) {
-		err = ERR_WAIT_FORK_CHILD;
+		err = KRootErr::ERR_WAIT_FORK_CHILD;
 	} else {
 		if(!read_errcode_from_child(finfo, err)) {
-			err = ERR_READ_CHILD_ERRCODE;
+			err = KRootErr::ERR_READ_CHILD_ERRCODE;
 		} else if(!read_string_from_child(finfo, result)) {
-			err = ERR_READ_CHILD_STRING;
+			err = KRootErr::ERR_READ_CHILD_STRING;
+		} else {
+			cb(result.c_str());
 		}
 	}
-	return result;
+	return err;
 }
 }
