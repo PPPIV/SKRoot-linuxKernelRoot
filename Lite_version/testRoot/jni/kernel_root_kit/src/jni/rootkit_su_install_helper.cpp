@@ -60,23 +60,22 @@ static KRootErr safe_install_su(const char* str_root_key, std::string& out_su_fu
 		KRootErr err = unsafe_install_su(str_root_key, out_su_full_path);
 		write_errcode_from_child(finfo, err);
 		write_string_from_child(finfo, out_su_full_path);
+		finfo.close_all();
 		_exit(0);
 		return KRootErr::ERR_NONE;
 	}
 	KRootErr err = KRootErr::ERR_NONE;
-	if(!is_fork_child_process_work_finished(finfo)) {
-		err = KRootErr::ERR_WAIT_FORK_CHILD;
-	} else {
-		if(!read_errcode_from_child(finfo, err)) {
-			err = KRootErr::ERR_READ_CHILD_ERRCODE;
-		} else if(!read_string_from_child(finfo, out_su_full_path)) {
-			err = KRootErr::ERR_READ_CHILD_STRING;
-		}
+	if(!read_errcode_from_child(finfo, err)) {
+		err = KRootErr::ERR_READ_CHILD_ERRCODE;
+	} else if(!read_string_from_child(finfo, out_su_full_path)) {
+		err = KRootErr::ERR_READ_CHILD_STRING;
 	}
+	int status = 0; waitpid(finfo.child_pid, &status, 0);
 	return err;
 }
 
 KRootErr install_su_with_cb(const char* str_root_key, void (*cb)(const char* su_full_path)) {
+	RETURN_ON_ERROR(clean_older_hide_dir(str_root_key));
 	RETURN_ON_ERROR(create_su_hide_dir(str_root_key));
 	std::string su_path;
 	RETURN_ON_ERROR(safe_install_su(str_root_key, su_path));
@@ -86,6 +85,7 @@ KRootErr install_su_with_cb(const char* str_root_key, void (*cb)(const char* su_
 #endif
 
 KRootErr uninstall_su(const char* str_root_key) {
+	clean_older_hide_dir(str_root_key);
 	return del_su_hide_dir(str_root_key);
 }
 

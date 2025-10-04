@@ -183,22 +183,20 @@ static KRootErr safe_parasite_precheck_app(const char* str_root_key, const char*
 		}
 		write_errcode_from_child(finfo, ret);
 		write_map_s_i_from_child(finfo, data);
+		finfo.close_all();
 		_exit(0);
 		return KRootErr::ERR_NONE;
 	}
 	KRootErr err = KRootErr::ERR_NONE;
-	if(!is_fork_child_process_work_finished(finfo)) {
-		err = KRootErr::ERR_WAIT_FORK_CHILD;
-	} else {
-		if(!read_errcode_from_child(finfo, err)) {
-			err = KRootErr::ERR_READ_CHILD_ERRCODE;
-		} else if(!read_map_s_i_from_child(finfo, data)) {
-			err = KRootErr::ERR_READ_CHILD_MAP_S_I;
-		}
-		for(auto & item : data) {
-			output_dynlib_full_path[item.first] = static_cast<app_dynlib_status>(item.second);
-		}
+	if(!read_errcode_from_child(finfo, err)) {
+		err = KRootErr::ERR_READ_CHILD_ERRCODE;
+	} else if(!read_map_s_i_from_child(finfo, data)) {
+		err = KRootErr::ERR_READ_CHILD_MAP_S_I;
 	}
+	for(auto & item : data) {
+		output_dynlib_full_path[item.first] = static_cast<app_dynlib_status>(item.second);
+	}
+	int status = 0; waitpid(finfo.child_pid, &status, 0);
 	return err;
 }
 KRootErr parasite_precheck_app_with_cb(const char* str_root_key, const char* target_pid_cmdline, void (*cb)(const char* so_full_path, app_dynlib_status status)) {
@@ -255,17 +253,15 @@ static KRootErr safe_parasite_implant_app(const char* str_root_key, const char* 
 	if(fork_pipe_child_process(finfo)) {
 		KRootErr ret = unsafe_parasite_implant_app(str_root_key, target_pid_cmdline, original_so_full_path);
 		write_errcode_from_child(finfo, ret);
+		finfo.close_all();
 		_exit(0);
 		return KRootErr::ERR_NONE;
 	}
 	KRootErr err = KRootErr::ERR_NONE;
-	if(!is_fork_child_process_work_finished(finfo)) {
-		err = KRootErr::ERR_WAIT_FORK_CHILD;
-	} else {
-		if(!read_errcode_from_child(finfo, err)) {
-			err = KRootErr::ERR_READ_CHILD_ERRCODE;
-		}
+	if(!read_errcode_from_child(finfo, err)) {
+		err = KRootErr::ERR_READ_CHILD_ERRCODE;
 	}
+	int status = 0; waitpid(finfo.child_pid, &status, 0);
 	return err;
 }
 
@@ -317,17 +313,15 @@ static KRootErr safe_parasite_implant_su_env(const char* str_root_key, const cha
 	if(fork_pipe_child_process(finfo)) {
 		KRootErr ret = unsafe_parasite_implant_su_env(str_root_key, target_pid_cmdline, original_so_full_path, su_dir_path);
 		write_errcode_from_child(finfo, ret);
+		finfo.close_all();
 		_exit(0);
 		return KRootErr::ERR_NONE;
 	}
 	KRootErr err = KRootErr::ERR_NONE;
-	if(!is_fork_child_process_work_finished(finfo)) {
-		err = KRootErr::ERR_WAIT_FORK_CHILD;
-	} else {
-		if(!read_errcode_from_child(finfo, err)) {
-			err = KRootErr::ERR_READ_CHILD_ERRCODE;
-		}
+	if(!read_errcode_from_child(finfo, err)) {
+		err = KRootErr::ERR_READ_CHILD_ERRCODE;
 	}
+	int status = 0; waitpid(finfo.child_pid, &status, 0);
 	return err;
 }
 

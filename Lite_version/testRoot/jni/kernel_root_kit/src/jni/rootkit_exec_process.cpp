@@ -56,17 +56,15 @@ namespace kernel_root {
 		if (fork_pipe_child_process(finfo)) {
 			KRootErr err = unsafe_root_exec_process(str_root_key, file_path);
 			write_errcode_from_child(finfo, err);
+			finfo.close_all();
 			_exit(0);
 			return KRootErr::ERR_NONE;
 		}
 		KRootErr err = KRootErr::ERR_NONE;
-		if (!is_fork_child_process_work_finished(finfo)) {
-			err = KRootErr::ERR_WAIT_FORK_CHILD;
-		} else if (!read_errcode_from_child(finfo, err)) {
-			if(err == KRootErr::ERR_READ_EOF) {
-				return KRootErr::ERR_NONE;
-			}
+		if (!read_errcode_from_child(finfo, err)) {
+			if(err == KRootErr::ERR_READ_EOF) err = KRootErr::ERR_NONE;
 		}
+		int status = 0; waitpid(finfo.child_pid, &status, 0);
 		return err;
 	}
 

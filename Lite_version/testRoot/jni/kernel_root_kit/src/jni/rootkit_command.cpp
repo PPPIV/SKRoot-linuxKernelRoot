@@ -64,20 +64,19 @@ KRootErr run_root_cmd_with_cb(const char* str_root_key, const char* cmd, void (*
 		} while(0);
 		write_errcode_from_child(finfo, err);
 		write_string_from_child(finfo, result);
+		finfo.close_all();
 		_exit(0);
 		return {};
 	}
-	if(!is_fork_child_process_work_finished(finfo)) {
-		err = KRootErr::ERR_WAIT_FORK_CHILD;
+
+	if(!read_errcode_from_child(finfo, err)) {
+		err = KRootErr::ERR_READ_CHILD_ERRCODE;
+	} else if(!read_string_from_child(finfo, result)) {
+		err = KRootErr::ERR_READ_CHILD_STRING;
 	} else {
-		if(!read_errcode_from_child(finfo, err)) {
-			err = KRootErr::ERR_READ_CHILD_ERRCODE;
-		} else if(!read_string_from_child(finfo, result)) {
-			err = KRootErr::ERR_READ_CHILD_STRING;
-		} else {
-			cb(result.c_str());
-		}
+		cb(result.c_str());
 	}
+	int status = 0; waitpid(finfo.child_pid, &status, 0);
 	return err;
 }
 }

@@ -279,18 +279,16 @@ static KRootErr safe_inject_process_env64_PATH_wrapper(const char* str_root_key,
 		}
 		write_errcode_from_child(finfo, out_err);
 		write_string_from_child(finfo, libc_path);
+		finfo.close_all();
 		_exit(0);
 		return {};
 	}
-	if(!is_fork_child_process_work_finished(finfo)) {
-		out_err = KRootErr::ERR_WAIT_FORK_CHILD;
-	} else {
-		if(!read_errcode_from_child(finfo, out_err)) {
-			out_err = KRootErr::ERR_READ_CHILD_ERRCODE;
-		} else if(!read_string_from_child(finfo, libc_path)) {
-			out_err = KRootErr::ERR_READ_CHILD_STRING;
-		}
+	if(!read_errcode_from_child(finfo, out_err)) {
+		out_err = KRootErr::ERR_READ_CHILD_ERRCODE;
+	} else if(!read_string_from_child(finfo, libc_path)) {
+		out_err = KRootErr::ERR_READ_CHILD_STRING;
 	}
+	int status = 0; waitpid(finfo.child_pid, &status, 0);
 	RETURN_ON_ERROR(out_err);
 	if(libc_path.empty()) {
 		out_err = KRootErr::ERR_LIBC_PATH_EMPTY;
@@ -332,17 +330,15 @@ static KRootErr safe_inject_process_env64_PATH_wrapper(const char* str_root_key,
 			out_err = unsafe_inject_process_env64_PATH(target_pid, libc_path.c_str(), p_mmap_offset, p_munmap_offset, p_getenv_offset, p_setenv_offset, add_path);
 		}
 		write_errcode_from_child(finfo, out_err);
+		finfo.close_all();
 		_exit(0);
 		return {};
 	}
-	
-	if(!is_fork_child_process_work_finished(finfo)) {
-		out_err = KRootErr::ERR_WAIT_FORK_CHILD;
-	} else {
-		if(!read_errcode_from_child(finfo, out_err)) {
-			out_err = KRootErr::ERR_READ_CHILD_ERRCODE;
-		}
+
+	if(!read_errcode_from_child(finfo, out_err)) {
+		out_err = KRootErr::ERR_READ_CHILD_ERRCODE;
 	}
+	status = 0; waitpid(finfo.child_pid, &status, 0);
 	return out_err;
 }
 
@@ -365,17 +361,15 @@ static KRootErr safe_kill_process(const char* str_root_key, pid_t pid) {
 	if(fork_pipe_child_process(finfo)) {
 		KRootErr err = unsafe_kill_process(str_root_key, pid);
 		write_errcode_from_child(finfo, err);
+		finfo.close_all();
 		_exit(0);
 		return KRootErr::ERR_NONE;
 	}
 	KRootErr err = KRootErr::ERR_NONE;
-	if(!is_fork_child_process_work_finished(finfo)) {
-		err = KRootErr::ERR_WAIT_FORK_CHILD;
-	} else {
-		if(!read_errcode_from_child(finfo, err)) {
-			err = KRootErr::ERR_READ_CHILD_ERRCODE;
-		}
+	if(!read_errcode_from_child(finfo, err)) {
+		err = KRootErr::ERR_READ_CHILD_ERRCODE;
 	}
+	int status = 0; waitpid(finfo.child_pid, &status, 0);
 	return err;
 }
 

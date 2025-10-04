@@ -136,7 +136,7 @@ inline std::string print_proc_self_cgroup(const char* tag = nullptr) {
 static KRootErr unsafe_test_root(const char* str_root_key, std::string& out) {
 	RETURN_ON_ERROR(kernel_root::get_root(str_root_key));
     out = print_self_uid_caps_state();
-    out += "=================\n";
+    out += "===================\n";
     out += print_proc_self_cgroup();
 	return KRootErr::ERR_NONE;
 }
@@ -148,19 +148,17 @@ static KRootErr safe_test_root(const char* str_root_key, std::string& out) {
 		KRootErr ret = unsafe_test_root(str_root_key, info);
 		write_errcode_from_child(finfo, ret);
 		write_string_from_child(finfo, info);
+        finfo.close_all();
 		_exit(0);
 		return KRootErr::ERR_NONE;
 	}
 	KRootErr err = KRootErr::ERR_NONE;
-	if(!is_fork_child_process_work_finished(finfo)) {
-		err = KRootErr::ERR_WAIT_FORK_CHILD;
-	} else {
-		if(!read_errcode_from_child(finfo, err)) {
-			err = KRootErr::ERR_READ_CHILD_ERRCODE;
-		} else if(!read_string_from_child(finfo, out)) {
-			err = KRootErr::ERR_READ_CHILD_STRING;
-		}
-	}
+    if(!read_errcode_from_child(finfo, err)) {
+        err = KRootErr::ERR_READ_CHILD_ERRCODE;
+    } else if(!read_string_from_child(finfo, out)) {
+        err = KRootErr::ERR_READ_CHILD_STRING;
+    }
+    int status = 0; waitpid(finfo.child_pid, &status, 0);
 	return err;
 }
 

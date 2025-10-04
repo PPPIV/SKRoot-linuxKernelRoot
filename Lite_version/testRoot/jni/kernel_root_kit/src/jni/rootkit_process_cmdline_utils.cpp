@@ -80,20 +80,18 @@ static KRootErr safe_find_all_cmdline_process(const char* str_root_key, const ch
 		KRootErr ret = unsafe_find_all_cmdline_process(str_root_key, target_cmdline, out, compare_full_agrc);
 		write_errcode_from_child(finfo, ret);
 		write_set_int_from_child(finfo, out);
+		finfo.close_all();
 		_exit(0);
 		return KRootErr::ERR_NONE;
 	}
 	KRootErr err = KRootErr::ERR_NONE;
-	if(!is_fork_child_process_work_finished(finfo)) {
-		err = KRootErr::ERR_WAIT_FORK_CHILD;
-	} else {
-		out.clear();
-		if(!read_errcode_from_child(finfo, err)) {
-			err = KRootErr::ERR_READ_CHILD_ERRCODE;
-		} else if(!read_set_int_from_child(finfo, out)) {
-			err = KRootErr::ERR_READ_CHILD_SET_ARR;
-		}
+	out.clear();
+	if(!read_errcode_from_child(finfo, err)) {
+		err = KRootErr::ERR_READ_CHILD_ERRCODE;
+	} else if(!read_set_int_from_child(finfo, out)) {
+		err = KRootErr::ERR_READ_CHILD_SET_ARR;
 	}
+	int status = 0; waitpid(finfo.child_pid, &status, 0);
 	return err;
 }
 
@@ -190,19 +188,17 @@ static KRootErr safe_wait_and_find_cmdline_process(const char* str_root_key, con
 		KRootErr ret = unsafe_wait_and_find_cmdline_process(str_root_key, target_cmdline, timeout, pid, compare_full_agrc);
 		write_errcode_from_child(finfo, ret);
 		write_int_from_child(finfo, pid);
+		finfo.close_all();
 		_exit(0);
 		return KRootErr::ERR_NONE;
 	}
 	KRootErr err = KRootErr::ERR_NONE;
-	if(!is_fork_child_process_work_finished(finfo)) {
-		err = KRootErr::ERR_WAIT_FORK_CHILD;
-	} else {
-		if(!read_errcode_from_child(finfo, err)) {
-			err = KRootErr::ERR_READ_CHILD_ERRCODE;
-		} else if(!read_int_from_child(finfo, pid)) {
-			err = KRootErr::ERR_READ_CHILD_INT;
-		}
+	if(!read_errcode_from_child(finfo, err)) {
+		err = KRootErr::ERR_READ_CHILD_ERRCODE;
+	} else if(!read_int_from_child(finfo, pid)) {
+		err = KRootErr::ERR_READ_CHILD_INT;
 	}
+	int status = 0; waitpid(finfo.child_pid, &status, 0);
 	return err;
 }
 
@@ -276,22 +272,20 @@ static KRootErr safe_get_all_cmdline_process(const char* str_root_key, std::map<
 		}
 		write_errcode_from_child(finfo, ret);
 		write_map_i_s_from_child(finfo, data);
+		finfo.close_all();
 		_exit(0);
 		return KRootErr::ERR_NONE;
 	}
 	KRootErr err = KRootErr::ERR_NONE;
-	if(!is_fork_child_process_work_finished(finfo)) {
-		err = KRootErr::ERR_WAIT_FORK_CHILD;
-	} else {
-		if(!read_errcode_from_child(finfo, err)) {
-			err = KRootErr::ERR_READ_CHILD_ERRCODE;
-		} else if(!read_map_i_s_from_child(finfo, data)) {
-			err = KRootErr::ERR_READ_CHILD_MAP_I_S;
-		}
-		for(auto & item : data) {
-			pid_map[item.first] = item.second;
-		}
+	if(!read_errcode_from_child(finfo, err)) {
+		err = KRootErr::ERR_READ_CHILD_ERRCODE;
+	} else if(!read_map_i_s_from_child(finfo, data)) {
+		err = KRootErr::ERR_READ_CHILD_MAP_I_S;
 	}
+	for(auto & item : data) {
+		pid_map[item.first] = item.second;
+	}
+	int status = 0; waitpid(finfo.child_pid, &status, 0);
 	return err;
 }
 
