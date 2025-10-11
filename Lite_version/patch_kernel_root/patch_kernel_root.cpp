@@ -17,25 +17,23 @@ bool check_file_path(const char* file_path) {
 	return std::filesystem::path(file_path).extension() != ".img";
 }
 
-bool parser_cred_offset(const std::vector<char>& file_buf, size_t start, std::string& mode_name, size_t& cred_offset) {
+bool parser_cred_offset(const std::vector<char>& file_buf, const SymbolRegion &symbol, std::string& mode_name, size_t& cred_offset) {
 	using namespace a64_find_mrs_register;
-	return find_current_task_next_register_offset(file_buf, start, mode_name, cred_offset);
+	return find_current_task_next_register_offset(file_buf, symbol.offset, symbol.offset + symbol.size, mode_name, cred_offset);
 }
 
-bool parse_cred_uid_offset(const std::vector<char>& file_buf, size_t start, size_t cred_offset, size_t& cred_uid_offset) {
+bool parse_cred_uid_offset(const std::vector<char>& file_buf, const SymbolRegion& symbol, size_t cred_offset, size_t& cred_uid_offset) {
 	using namespace a64_find_imm_register_offset;
 	cred_uid_offset = 0;
 
-	std::vector<size_t> candidate_offsets;
-	if (!find_imm_register_offset(file_buf, start, candidate_offsets))
+	std::vector<int64_t> candidate_offsets;
+	if (!find_imm_register_offset(file_buf, symbol.offset, symbol.offset + symbol.size, candidate_offsets))
 		return false;
 
 	auto it = std::find(candidate_offsets.begin(), candidate_offsets.end(), cred_offset);
 	if (it != candidate_offsets.end()) {
 		for (++it; it != candidate_offsets.end(); ++it) {
-			if (*it > 0x30) {
-				continue;
-			}
+			if (*it > 0x30 || *it < 0) continue;
 			cred_uid_offset = *it;
 			break;
 		}
@@ -43,9 +41,9 @@ bool parse_cred_uid_offset(const std::vector<char>& file_buf, size_t start, size
 	return cred_uid_offset != 0;
 }
 
-bool parser_seccomp_offset(const std::vector<char>& file_buf, size_t start, std::string& mode_name, size_t& seccomp_offset) {
+bool parser_seccomp_offset(const std::vector<char>& file_buf, const SymbolRegion& symbol, std::string& mode_name, size_t& seccomp_offset) {
 	using namespace a64_find_mrs_register;
-	return find_current_task_next_register_offset(file_buf, start, mode_name, seccomp_offset);
+	return find_current_task_next_register_offset(file_buf, symbol.offset, symbol.offset + symbol.size, mode_name, seccomp_offset);
 }
 
 void cfi_bypass(const std::vector<char>& file_buf, KernelSymbolOffset &sym, std::vector<patch_bytes_data>& vec_patch_bytes_data) {
@@ -144,7 +142,7 @@ int main(int argc, char* argv[]) {
 	++argv;
 	--argc;
 
-	std::cout << "本工具用于生成SKRoot(Lite) ARM64 Linux内核ROOT提权代码 V8" << std::endl << std::endl;
+	std::cout << "本工具用于生成SKRoot(Lite) ARM64 Linux内核ROOT提权代码 V9" << std::endl << std::endl;
 
 #ifdef _DEBUG
 #else
@@ -185,7 +183,7 @@ int main(int argc, char* argv[]) {
 	size_t cred_offset  = 0;
 	size_t cred_uid_offset = 0;
 	size_t seccomp_offset = 0;
-	if (!parser_cred_offset(file_buf, sym.revert_creds, t_mode_name, cred_offset)) {
+	if (!parser_cred_offset(file_buf, sym.sys_getuid, t_mode_name, cred_offset)) {
 		std::cout << "Failed to parse cred offsert" << std::endl;
 		system("pause");
 		return 0;
@@ -232,9 +230,9 @@ int main(int argc, char* argv[]) {
 		std::cin >> str_root_key;
 		std::cout << std::endl;
 	}
-	std::string write_kernel_key = str_root_key;
-	write_kernel_key.erase(write_kernel_key.size() - 1);
-	patch_data(file_buf, pr.root_key_start, (void*)write_kernel_key.c_str(), write_kernel_key.length() + 1, vec_patch_bytes_data);
+	std::string write_key = str_root_key;
+	write_key.erase(write_key.size() - 1);
+	patch_data(file_buf, pr.root_key_start, (void*)write_key.c_str(), write_key.length() + 1, vec_patch_bytes_data);
 
 	std::cout << "#获取ROOT权限的密匙：" << str_root_key.c_str() << std::endl << std::endl;
 

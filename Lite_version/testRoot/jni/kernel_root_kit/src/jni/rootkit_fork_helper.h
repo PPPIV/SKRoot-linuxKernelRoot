@@ -65,6 +65,10 @@ class fork_pipe_info : public fork_base_info {};
 
 bool fork_pipe_child_process(fork_pipe_info & finfo);
 
+bool write_transfer_data_from_child(const fork_pipe_info& finfo, const std::vector<uint8_t>& buf);
+
+bool read_transfer_data_from_child(fork_pipe_info& finfo, std::vector<uint8_t>& out);
+
 bool write_errcode_from_child(const fork_pipe_info & finfo, KRootErr e);
 
 bool read_errcode_from_child(const fork_pipe_info & finfo, KRootErr & e);

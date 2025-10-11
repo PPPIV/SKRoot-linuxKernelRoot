@@ -199,7 +199,8 @@ static KRootErr safe_parasite_precheck_app(const char* str_root_key, const char*
 	int status = 0; waitpid(finfo.child_pid, &status, 0);
 	return err;
 }
-KRootErr parasite_precheck_app_with_cb(const char* str_root_key, const char* target_pid_cmdline, void (*cb)(const char* so_full_path, app_dynlib_status status)) {
+
+KRootErr parasite_precheck_app_with_cb(const char* str_root_key, const char* target_pid_cmdline, void (*cb)(const char* dynlib_full_path, app_dynlib_status status)) {
 	std::map<std::string, app_dynlib_status> output;
 	RETURN_ON_ERROR(safe_parasite_precheck_app(str_root_key, target_pid_cmdline, output));
 	for(auto& item : output) {

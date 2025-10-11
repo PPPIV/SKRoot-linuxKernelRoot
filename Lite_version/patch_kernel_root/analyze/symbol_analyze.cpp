@@ -1,4 +1,5 @@
 ﻿#include "symbol_analyze.h"
+#include "3rdparty/find_func_return_offset.h"
 
 SymbolAnalyze::SymbolAnalyze(const std::vector<char>& file_buf) : m_file_buf(file_buf), m_kernel_sym_parser(file_buf)
 {
@@ -57,15 +58,14 @@ bool SymbolAnalyze::find_symbol_offset() {
 		m_kernel_sym_offset.filldir64 = kallsyms_matching_single("filldir64", true);
 	}
 
-	m_kernel_sym_offset.revert_creds = kallsyms_matching_single("revert_creds");
-	m_kernel_sym_offset.sys_getuid = kallsyms_matching_single("sys_getuid");
-	if (m_kernel_sym_offset.sys_getuid == 0) {
-		m_kernel_sym_offset.sys_getuid = kallsyms_matching_single("__arm64_sys_getuid");
-		if (m_kernel_sym_offset.sys_getuid == 0) {
-			m_kernel_sym_offset.sys_getuid = kallsyms_matching_single("sys_getuid", true);
+	m_kernel_sym_offset.sys_getuid = parse_symbol_region(kallsyms_matching_single("sys_getuid"));
+	if (m_kernel_sym_offset.sys_getuid.offset == 0) {
+		m_kernel_sym_offset.sys_getuid = parse_symbol_region(kallsyms_matching_single("__arm64_sys_getuid"));
+		if (m_kernel_sym_offset.sys_getuid.offset == 0) {
+			m_kernel_sym_offset.sys_getuid = parse_symbol_region(kallsyms_matching_single("sys_getuid", true));
 		}
 	}
-	m_kernel_sym_offset.prctl_get_seccomp = kallsyms_matching_single("prctl_get_seccomp"); // backup: seccomp_filter_release
+	m_kernel_sym_offset.prctl_get_seccomp = parse_symbol_region(kallsyms_matching_single("prctl_get_seccomp")); // backup: seccomp_filter_release
 	 
 	
 	m_kernel_sym_offset.__cfi_check = parse_symbol_region(kallsyms_matching_single("__cfi_check"));
@@ -83,9 +83,8 @@ bool SymbolAnalyze::find_symbol_offset() {
 	return (m_kernel_sym_offset.do_execve || m_kernel_sym_offset.do_execveat || m_kernel_sym_offset.do_execveat_common) 
 		&& m_kernel_sym_offset.avc_denied.offset
 		&& m_kernel_sym_offset.filldir64
-		&& m_kernel_sym_offset.revert_creds
-		&& m_kernel_sym_offset.sys_getuid
-		&& m_kernel_sym_offset.prctl_get_seccomp;
+		&& m_kernel_sym_offset.sys_getuid.offset
+		&& m_kernel_sym_offset.prctl_get_seccomp.offset;
 }
 
 
@@ -105,9 +104,8 @@ void SymbolAnalyze::printf_symbol_offset() {
 	std::cout << "avc_denied:" << m_kernel_sym_offset.avc_denied.offset << ", size:" << m_kernel_sym_offset.avc_denied.size << std::endl;
 	std::cout << "filldir64:" << m_kernel_sym_offset.filldir64 << std::endl;
 
-	std::cout << "revert_creds:" << m_kernel_sym_offset.revert_creds << std::endl;
-	std::cout << "sys_getuid:" << m_kernel_sym_offset.sys_getuid << std::endl;
-	std::cout << "prctl_get_seccomp:" << m_kernel_sym_offset.prctl_get_seccomp << std::endl;
+	std::cout << "sys_getuid:" << m_kernel_sym_offset.sys_getuid.offset << ", size:" << m_kernel_sym_offset.sys_getuid.size << std::endl;
+	std::cout << "prctl_get_seccomp:" << m_kernel_sym_offset.prctl_get_seccomp.offset << ", size:" << m_kernel_sym_offset.prctl_get_seccomp.size << std::endl;
 
 	std::cout << "__cfi_check:" << m_kernel_sym_offset.__cfi_check.offset << ", size:" << m_kernel_sym_offset.__cfi_check.size << std::endl;
 	std::cout << "__cfi_check_fail:" << m_kernel_sym_offset.__cfi_check_fail << std::endl;
@@ -137,21 +135,13 @@ std::unordered_map<std::string, uint64_t> SymbolAnalyze::kallsyms_matching_all(c
 }
 
 SymbolRegion SymbolAnalyze::parse_symbol_region(uint64_t offset) {
-	if (offset == 0) { return {}; }
-	constexpr uint32_t kRetInstr = 0xD65F03C0;
-	const size_t buf_size = m_file_buf.size();
+	using namespace a64_find_func_return_offset;
 	SymbolRegion results;
 	results.offset = offset;
-	for (size_t i = offset; i + 4 <= buf_size; i += 4) {
-		uint32_t instr = *reinterpret_cast<const uint32_t*>(&m_file_buf[i]);
-		if (instr == kRetInstr) {
-			results.size = i - offset + 4;
-			break;
-		}
-	}
-	if (results.size == 0) {
-		results.size = 4;
-	}
+	if (offset == 0) return results;
+	size_t candidate_offsets = 0;
+	if (!find_func_return_offset(m_file_buf, offset, candidate_offsets)) return results;
+	results.size = candidate_offsets;
 	return results;
 }
 

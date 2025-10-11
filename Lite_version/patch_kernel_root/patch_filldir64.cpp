@@ -18,6 +18,7 @@ size_t PatchFilldir64::patch_filldir64_root_key_guide(size_t root_key_mem_addr, 
 	auto& a = asm_info.a;
 	int root_key_adr_offset = root_key_mem_addr - (hook_func_start_addr + a->offset());
 	aarch64_asm_adr_x(a, x11, root_key_adr_offset);
+
 	std::cout << print_aarch64_asm(asm_info) << std::endl;
 
 	std::vector<uint8_t> bytes = aarch64_asm_to_bytes(asm_info);

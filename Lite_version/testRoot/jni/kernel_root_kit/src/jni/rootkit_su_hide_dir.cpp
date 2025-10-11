@@ -97,9 +97,7 @@ static KRootErr unsafe_clean_older_hide_dir(const char* root_key) {
     std::string flag_file_name  = skroot_flag_path.filename().string();// skroot
 
     DIR* dir = opendir(base_dir_path.c_str());
-    if (!dir) {
-        return KRootErr::ERR_OPEN_DIR;
-    }
+    if (!dir) return KRootErr::ERR_OPEN_DIR;
 
     std::vector<fs::path> dirs_to_delete;
     struct dirent* entry;

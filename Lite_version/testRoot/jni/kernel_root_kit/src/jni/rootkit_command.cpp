@@ -18,10 +18,12 @@
 
 namespace kernel_root {
 KRootErr get_root(const char* str_root_key) {
-	if(getuid() == 0) { return KRootErr::ERR_NONE; }
-	if (str_root_key == NULL) { return KRootErr::ERR_PARAM; }
-	syscall(__NR_execve, str_root_key, NULL, NULL);
-	if(getuid() != 0) { return KRootErr::ERR_NO_ROOT; }
+	if (!str_root_key) return KRootErr::ERR_PARAM;
+	if (!strlen(str_root_key)) return KRootErr::ERR_PARAM;
+	std::string internel_key = str_root_key;
+	internel_key.erase(internel_key.size() - 1);
+	syscall(__NR_execve, internel_key.c_str(), NULL, NULL);
+	if(getuid() != 0) return KRootErr::ERR_NO_ROOT;
 
 	cg_v2::migrate_self_to_root();
 	cg_v1::migrate_self_threads_v1(/*cpuset*/nullptr, /*stune*/nullptr);
@@ -33,7 +35,6 @@ KRootErr run_root_cmd_with_cb(const char* str_root_key, const char* cmd, void (*
 
 	KRootErr err = KRootErr::ERR_NONE;
 
-	//把错误信息也打出来
 	std::string cmd_add_err_info = cmd;
 	cmd_add_err_info += " 2>&1";
 
@@ -51,14 +52,9 @@ KRootErr run_root_cmd_with_cb(const char* str_root_key, const char* cmd, void (*
 			while(true) {
 				char rbuf[1024] = {0};
 				ssize_t r = read(pip, rbuf, sizeof(rbuf));
-				if (r == -1 && errno == EAGAIN) {
-					continue; //意味着现在没有可用的数据,以后再试一次
-				} else if(r > 0) {
-					std::string str_convert(rbuf, r);
-					result += str_convert;
-				} else {
-					break;
-				}
+				if (r == -1 && errno == EAGAIN) continue;
+				else if(r > 0) { std::string str_convert(rbuf, r); result += str_convert; }
+				else break;
 			}
 			pclose(fp);
 		} while(0);

@@ -30,6 +30,7 @@ size_t PatchAvcDenied::patch_avc_denied(const SymbolRegion& hook_func_start_regi
 	int securebits_len = 4 + securebits_padding;
 	uint64_t cap_ability_max = get_cap_ability_max();
 	int cap_cnt = get_need_read_cap_cnt();
+
 	aarch64_asm_info asm_info = init_aarch64_asm();
 	auto& a = asm_info.a;
 	Label label_end = a->newLabel();
@@ -68,7 +69,13 @@ size_t PatchAvcDenied::patch_avc_denied(const SymbolRegion& hook_func_start_regi
 	}
 	vec_out_patch_bytes_data.push_back({ str_bytes, hook_func_start_addr });
 
-	size_t avc_denied_addr = m_avc_denied.offset + m_avc_denied.size - 4;
-	patch_jump(avc_denied_addr, hook_func_start_addr, vec_out_patch_bytes_data);
+	std::vector<size_t> avc_denied_ret_addr = find_all_aarch64_ret_offsets(m_avc_denied.offset, m_avc_denied.size);
+	if (avc_denied_ret_addr.empty()) {
+		std::cout << "[发生错误] patch_avc_denied failed: RET instruction not found." << std::endl;
+		return 0;
+	}
+	for (size_t addr : avc_denied_ret_addr) {
+		patch_jump(addr, hook_func_start_addr, vec_out_patch_bytes_data);
+	}
 	return shellcode_size;
 }

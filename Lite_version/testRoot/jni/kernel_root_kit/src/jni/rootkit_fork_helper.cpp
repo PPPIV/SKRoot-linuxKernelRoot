@@ -85,14 +85,14 @@ static bool read_full(int fd, void* buf, size_t len) {
     return true;
 }
 
-static bool write_transfer_data_from_child(const fork_pipe_info& finfo, const std::vector<uint8_t>& buf) {
+bool write_transfer_data_from_child(const fork_pipe_info& finfo, const std::vector<uint8_t>& buf) {
     const uint64_t n = static_cast<uint64_t>(buf.size());
     if (!write_full(finfo.fd_write_child, &n, sizeof(n))) return false;
     if (n == 0) return true;
     return write_full(finfo.fd_write_child, buf.data(), buf.size());
 }
 
-static bool read_transfer_data_from_child(fork_pipe_info& finfo, std::vector<uint8_t>& out) {
+bool read_transfer_data_from_child(fork_pipe_info& finfo, std::vector<uint8_t>& out) {
     out.clear();
     uint64_t n = 0;
     if (!read_full(finfo.fd_read_child, &n, sizeof(n))) return false;

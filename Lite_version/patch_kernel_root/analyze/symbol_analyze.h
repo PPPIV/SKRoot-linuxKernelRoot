@@ -28,10 +28,8 @@ struct KernelSymbolOffset {
 	SymbolRegion avc_denied = { 0 };
 	size_t filldir64 = 0;
 
-	size_t revert_creds = 0;
-	size_t sys_getuid = 0;
-	size_t prctl_get_seccomp = 0;
-
+	SymbolRegion sys_getuid = { 0 };
+	SymbolRegion prctl_get_seccomp = { 0 };
 
 	SymbolRegion __cfi_check = { 0 };
 	size_t __cfi_check_fail = 0;

@@ -98,3 +98,15 @@ void PatchBase::get_current_to_reg(std::shared_ptr<asmjit::a64::Assembler> a, as
 		a->ldr(x, ptr(x, sizeof(thread_info)));
 	}
 }
+
+std::vector<size_t> PatchBase::find_all_aarch64_ret_offsets(size_t offset, size_t size) {
+	std::vector<size_t> v_ret_addr;
+	for (auto i = offset; i <= offset + size; i += 4) {
+		constexpr uint32_t kRetInstr = 0xD65F03C0;
+		uint32_t instr = *reinterpret_cast<const uint32_t*>(&m_file_buf[i]);
+		if (instr == kRetInstr) {
+			v_ret_addr.push_back(i);
+		}
+	}
+	return v_ret_addr;
+}

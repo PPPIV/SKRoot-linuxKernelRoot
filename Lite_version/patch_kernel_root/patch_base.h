@@ -21,6 +21,7 @@ protected:
 
 	bool is_CONFIG_THREAD_INFO_IN_TASK();
 	void get_current_to_reg(std::shared_ptr<asmjit::a64::Assembler> a, asmjit::a64::GpX x);
+	std::vector<size_t> find_all_aarch64_ret_offsets(size_t offset, size_t size);
 
 	const std::vector<char>& m_file_buf;
 	KernelVersionParser m_kernel_ver_parser;

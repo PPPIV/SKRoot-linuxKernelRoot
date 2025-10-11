@@ -11,7 +11,7 @@ namespace a64_find_mrs_register {
 constexpr int kMinRegisterOffset = 0x200;
 struct code_line {
 	uint64_t addr;
-	std::string mnemonic;
+	arm64_insn cmd_id = ARM64_INS_INVALID;
 	std::string op_str;
 };
 
@@ -19,7 +19,7 @@ bool handle_mrs(const std::vector<code_line>& v_code_line, size_t& register_offs
 	bool res = false;
 	for (auto x = 0; x < v_code_line.size(); x++) {
 		auto& item = v_code_line[x];
-		if (item.mnemonic != "mrs") {
+		if (item.cmd_id != ARM64_INS_MRS) {
 			continue;
 		}
 		int xCurrentReg = 0;
@@ -38,14 +38,14 @@ bool handle_mrs(const std::vector<code_line>& v_code_line, size_t& register_offs
 			xFirstRegNum = 0;
 			xFirstRegOffset = 0;
 			auto& item2 = v_code_line[y];
-			if (item2.mnemonic.length() >= 3 && item2.mnemonic.substr(0, 3) == "ldr") {
+			if (item2.cmd_id == ARM64_INS_LDR || item2.cmd_id == ARM64_INS_LDRSW) {
 				std::stringstream fmt;
 				fmt << "x%d, [x" << xCurrentReg << ", #%llx]";
 				if (sscanf(item2.op_str.c_str(), fmt.str().c_str(), &xFirstRegNum, &xFirstRegOffset) != 2) {
 					continue;
 				}
 			}
-			if (item2.mnemonic.length() >= 3 && item2.mnemonic.substr(0, 3) == "add") {
+			if (item2.cmd_id == ARM64_INS_ADD) {
 				std::stringstream fmt;
 				fmt << "x%d, x" << xCurrentReg << ", #%llx";
 				if (sscanf(item2.op_str.c_str(), fmt.str().c_str(), &xFirstRegNum, &xFirstRegOffset) != 2) {
@@ -70,7 +70,7 @@ bool handle_and(const std::vector<code_line>& v_code_line, size_t& register_offs
 	bool res = false;
 	for (auto x = 0; x < v_code_line.size(); x++) {
 		auto& item = v_code_line[x];
-		if (item.mnemonic != "and") {
+		if (item.cmd_id != ARM64_INS_AND) {
 			continue;
 		}
 		int xCurrentReg = 0;
@@ -90,14 +90,14 @@ bool handle_and(const std::vector<code_line>& v_code_line, size_t& register_offs
 			xFirstRegNum = 0;
 			xFirstRegOffset = 0;
 			auto& item2 = v_code_line[y];
-			if (item2.mnemonic.length() >= 3 && item2.mnemonic.substr(0, 3) == "ldr") {
+			if (item2.cmd_id == ARM64_INS_LDR || item2.cmd_id == ARM64_INS_LDRSW) {
 				std::stringstream fmt;
 				fmt << "x%d, [x" << xCurrentReg << ", #%llx]";
 				if (sscanf(item2.op_str.c_str(), fmt.str().c_str(), &xFirstRegNum, &xFirstRegOffset) != 2) {
 					continue;
 				}
 			}
-			if (item2.mnemonic.length() >= 3 && item2.mnemonic.substr(0, 3) == "add") {
+			if (item2.cmd_id == ARM64_INS_ADD) {
 				std::stringstream fmt;
 				fmt << "x%d, x" << xCurrentReg << ", #%llx";
 				if (sscanf(item2.op_str.c_str(), fmt.str().c_str(), &xFirstRegNum, &xFirstRegOffset) != 2) {
@@ -118,7 +118,7 @@ bool handle_and(const std::vector<code_line>& v_code_line, size_t& register_offs
 	return res;
 }
 
-bool handle_current_task_next_register_offset(const std::string& group_name, const std::vector<code_line>& v_code_line, std::string& mode_name, size_t& register_offset) {
+bool handle_current_task_next_register_offset(const std::vector<code_line>& v_code_line, std::string& mode_name, size_t& register_offset) {
 	bool _mrs = handle_mrs(v_code_line, register_offset);
 	if (_mrs) {
 		mode_name = "mrs";
@@ -132,7 +132,8 @@ bool handle_current_task_next_register_offset(const std::string& group_name, con
 	return false;
 }
 
-bool find_current_task_next_register_offset(const std::vector<char>& file_buf, size_t start, std::string& mode_name, size_t& register_offset) {
+bool find_current_task_next_register_offset(const std::vector<char>& file_buf, size_t start, size_t end, std::string& mode_name, size_t& register_offset) {
+	size_t sz = end - start;
 	bool res = false;
 	csh handle;
 	cs_err err = cs_open(CS_ARCH_ARM64, CS_MODE_LITTLE_ENDIAN, &handle);
@@ -149,21 +150,16 @@ bool find_current_task_next_register_offset(const std::vector<char>& file_buf, s
 	const uint8_t* code = (const uint8_t*)&file_buf[0] + start;
 	size_t file_size = file_buf.size() - start;
 	std::vector<code_line> v_code_line;
+	v_code_line.reserve(sz / 4);
 	while (cs_disasm_iter(handle, &code, &file_size, &address, insn)) {
 		code_line line;
 		line.addr = insn->address;
-		line.mnemonic = insn->mnemonic;
+		line.cmd_id = (arm64_insn)insn->id;
 		line.op_str = insn->op_str;
 		v_code_line.push_back(line);
-
-		cs_detail* detail = insn->detail;
-		if (detail->groups_count > 0 && v_code_line.size() >= 2) {
-			std::string group_name = cs_group_name(handle, detail->groups[0]);
-			res = handle_current_task_next_register_offset(group_name, v_code_line, mode_name, register_offset);
-			if (res) {
-				break;
-			}
-		}
+		if (v_code_line.back().addr < sz) continue;
+		res = handle_current_task_next_register_offset(v_code_line, mode_name, register_offset);
+		if (res) break;
 	}
 	cs_free(insn, 1);
 	cs_close(&handle);
