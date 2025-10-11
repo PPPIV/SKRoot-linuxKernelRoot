@@ -33,7 +33,7 @@ bool parse_cred_uid_offset(const std::vector<char>& file_buf, const SymbolRegion
 	auto it = std::find(candidate_offsets.begin(), candidate_offsets.end(), cred_offset);
 	if (it != candidate_offsets.end()) {
 		for (++it; it != candidate_offsets.end(); ++it) {
-			if (*it > 0x30 || *it < 0) continue;
+			if (*it > 0x30 || *it < 4) continue;
 			cred_uid_offset = *it;
 			break;
 		}
